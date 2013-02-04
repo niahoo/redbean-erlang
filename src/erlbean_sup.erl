@@ -3,26 +3,29 @@
 
 -behaviour(supervisor).
 
-%% API
--export([start_link/0]).
+-export([start_link/0,
+         add_database/3
+        ]).
 
-%% Supervisor callbacks
 -export([init/1]).
 
-%% Helper macro for declaring children of supervisor
--define(CHILD(I, Type), {I, {I, start_link, []}, permanent, 5000, Type, [I]}).
-
-%% ===================================================================
-%% API functions
-%% ===================================================================
+-define(SERVER, ?MODULE).
 
 start_link() ->
-    supervisor:start_link({local, ?MODULE}, ?MODULE, []).
+    supervisor:start_link({local, ?SERVER}, ?MODULE, []).
 
-%% ===================================================================
-%% Supervisor callbacks
-%% ===================================================================
+add_database(AdapterModule, Name, Conf) ->
+    supervisor:start_child(?SERVER, [ ]).
 
 init([]) ->
-    {ok, { {one_for_one, 5, 10}, []} }.
+
+    %% la erlang toolbox doit juste lancer le start_link du module
+    %% adapter, ce dernier doit s'enregistrer avec son Name
+
+    Element = {erlbean_toolbox, {erlbean_toolbox, start_link, []},
+               permanent, 2000, worker, [erlbean_toolbox]},
+    Children = [Element],
+    RestartStrategy = {simple_one_for_one, 1, 10},
+    error_logger:info_msg("Supervisor ~p config done~n", [?MODULE]),
+    {ok, {RestartStrategy, Children}}.
 
