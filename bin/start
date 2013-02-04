@@ -1,0 +1,3 @@
+PWD=`pwd`
+
+erl -args_file $PWD/priv/vm-args

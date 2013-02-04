@@ -1,0 +1,15 @@
+# NODE CONFIG
+
+-sname eb
+-setcookie testcookie
+
+# DEBUGGING
+
+# -init_debug
+# -emu_args
+
+# APPLICATIONS START
+
+-s erlbean
+
+## Path disponible

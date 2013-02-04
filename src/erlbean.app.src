@@ -1,0 +1,12 @@
+{application, erlbean,
+ [
+  {description, ""},
+  {vsn, "1"},
+  {registered, []},
+  {applications, [
+                  kernel,
+                  stdlib
+                 ]},
+  {mod, { erlbean_app, []}},
+  {env, []}
+ ]}.
