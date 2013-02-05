@@ -5,5 +5,6 @@
               {applications,[kernel,stdlib]},
               {mod,{erlbean_app,[]}},
               {env,[]},
-              {modules,[eb,eb_adapter_epgsql,eb_bean,erlbean,erlbean_app,
-                        erlbean_facade,erlbean_kickstart,erlbean_sup]}]}.
+              {modules,[eb,eb_adapter,eb_adapter_epgsql,eb_bean,eb_db,erlbean,
+                        erlbean_app,erlbean_facade,erlbean_kickstart,
+                        erlbean_sup]}]}.

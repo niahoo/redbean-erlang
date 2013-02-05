@@ -1,3 +1,5 @@
+
+
 all: get-deps vm-args compile-all
 
 remake: clean-deps clean all
@@ -11,7 +13,7 @@ compile-all:
 	@(rebar compile)
 
 get-deps:
-	@(rebar get-deps)
+	@(GPROC_DIST=true rebar get-deps)
 
 clean:
 	@(rebar clean)
@@ -20,7 +22,7 @@ clean-deps:
 	@(rebar delete-deps)
 
 tests:
-	@(rebar eunit)
+	@(rebar skip_deps=true eunit)
 	rm .eunit -r
 
 xref:

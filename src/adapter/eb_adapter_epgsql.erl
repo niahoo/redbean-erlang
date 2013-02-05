@@ -1,6 +1,7 @@
 -module(eb_adapter_epgsql).
 
 -behaviour(gen_server).
+-behaviour(eb_adapter).
 
 %% API
 -export([start_link/2]).
@@ -12,6 +13,9 @@
      handle_info/2,
      terminate/2,
      code_change/3]).
+
+%% eb_adapter callbacks
+-export([store/2,exec/2,exec/3]).
 
 -define(SERVER, ?MODULE).
 
@@ -30,6 +34,15 @@
 %%--------------------------------------------------------------------
 start_link(Name,Conf) ->
     {ok, _Pid} = gen_server:start_link({local, Name}, ?MODULE, [Conf], []).
+
+
+store(_,_) -> fuck.
+exec(Toolkit, Query) ->
+    gen_server:call(Toolkit, {exec, Query}).
+
+exec(_,_,_) -> fuck.
+
+
 
 %%%===================================================================
 %%% gen_server callbacks
@@ -71,6 +84,12 @@ init([Conf]) ->
 %%       {stop, Reason, State}
 %% @end
 %%--------------------------------------------------------------------
+
+%% ici c'est une q sans paramètres
+handle_call({exec, Query}, _From, #state{c=C}=State) ->
+    Reply = pgsql:equery(C, Query),
+    {reply, Reply, State};
+
 handle_call(_Request, _From, State) ->
     Reply = ok,
     {reply, Reply, State}.
