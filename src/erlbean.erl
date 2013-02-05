@@ -5,11 +5,12 @@
 start() ->
 
 
-    TestConf = [
-        {host, "localhost"},
-        {user, "postgres"},
-        {password, "manager"}
-    ],
+    TestConf =
+        [{user,"test"},
+         {password,"test"},
+         {host,"localhost"},
+         {opts,[{database,"test"}]
+         }],
 
 
     application:start(erlbean)

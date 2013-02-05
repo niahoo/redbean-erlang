@@ -15,7 +15,7 @@
 
 -define(SERVER, ?MODULE).
 
--record(state, {}).
+-record(state, {c}).
 
 %%%===================================================================
 %%% API
@@ -46,9 +46,16 @@ start_link(Name,Conf) ->
 %%     {stop, Reason}
 %% @end
 %%--------------------------------------------------------------------
-init([_Conf]) ->
-    error_logger:info_msg("Initialisation ~p ~n",[?MODULE]),
-    {ok, #state{}}.
+init([Conf]) ->
+    error_logger:info_msg("Connecting to postgres ~p ~n",[?MODULE]),
+    Host     = proplists:get_value(host,    Conf, "localhost"),
+    Username = proplists:get_value(user,    Conf),
+    Password = proplists:get_value(password,Conf),
+    Opts     = proplists:get_value(opts,    Conf, []),
+    true = is_list(Opts),
+    {ok, C}  = pgsql:connect(Host, Username, Password, Opts),
+    error_logger:info_msg("Connection to postgres ok : ~p~n",[C]),
+    {ok, #state{c=C}}.
 
 %%--------------------------------------------------------------------
 %% @private

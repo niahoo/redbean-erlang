@@ -20,7 +20,7 @@ clean-deps:
 	@(rebar delete-deps)
 
 tests:
-	@(rebar skip_deps=true eunit)
+	@(rebar eunit)
 	rm .eunit -r
 
 xref:
