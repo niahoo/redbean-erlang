@@ -5,7 +5,8 @@
 -export([dispense/1]).
 
 
-setup(Adapter, Conf) -> setup(Adapter, default_toolkit, Conf).
+setup(Adapter, Conf) ->
+    setup(Adapter, default_toolkit, Conf).
 
 setup(Adapter, Name, Conf) when is_atom(Adapter) ->
     LA = atom_to_list(Adapter),

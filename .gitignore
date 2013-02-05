@@ -1,4 +1,4 @@
-.dump
+erl_crash.dump
 .eunit
 deps
 *.o

@@ -2,19 +2,13 @@
 
 
 -export([new/1]).
--export([get/2,set/3]).
-
--ifdef(TEST).
--include_lib("eunit/include/eunit.hrl").
--endif.
+-export([get/2,set/2,set/3]).
 
 
--define(DICT, orddict).
 
--record(bean, {type :: atom(),
-               props=?DICT:new(),
-               tainted=true :: boolean()
-              }).
+-include_lib("erlbean/include/erlbean.hrl").
+
+
 
 new(Type) when is_atom(Type) ->
     {eb_bean, #bean{type=Type}}.
@@ -25,18 +19,15 @@ get(Key, {eb_bean,Bean}) when is_atom(Key) ->
          ; Value -> Value
     end.
 
+set([], {eb_bean,_Bean}=Wrapper) ->
+    Wrapper;
+
+set([{Key,Value}|Props], Wrapper) ->
+    NewWrapper = set(Key, Value, Wrapper),
+    set(Props, NewWrapper).
+
+
 set(Key, Value, {eb_bean,Bean}) when is_atom(Key) ->
    NewProps = ?DICT:store(Key, Value, Bean#bean.props),
    {eb_bean,Bean#bean{props=NewProps}}.
 
-
-
--ifdef(TEST).
-new_test() ->
-    ?assertMatch({eb_bean, #bean{type=testb, tainted=true}}, eb_bean:new(testb)).
-
-getset_test() ->
-    Bean = eb_bean:new(testb),
-    Bean2 = Bean:set(mykey,<<"My Value">>),
-    ?assertEqual(Bean2:get(mykey),{ok, <<"My Value">>}).
--endif.

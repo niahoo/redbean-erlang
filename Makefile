@@ -19,7 +19,7 @@ clean:
 clean-deps:
 	@(rebar delete-deps)
 
-test:
+tests:
 	@(rebar skip_deps=true eunit)
 	rm .eunit -r
 
