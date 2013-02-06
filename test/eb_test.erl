@@ -38,13 +38,11 @@ get_toolkit_test_() ->
 
 startapp() ->
     ok = application:start(erlbean),
-    ok = application:start(gproc),
     eb:setup(epgsql,?PGTESTCONF),
     started.
 
 stopapp(started) ->
     error_logger:tty(false),
-    ok = application:stop(gproc),
     ok = application:stop(erlbean),
     error_logger:tty(true).
 

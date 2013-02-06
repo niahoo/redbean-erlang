@@ -4,15 +4,6 @@
 -export([start_test_db/0]).
 
 start() ->
-
-    ok = case application:start(gproc)
-        of ok -> ok
-         ; {error, {already_started,gproc}} -> ok
-         ; _Error -> {error, {not_started, gproc}}
-    end,
-
-
-
     application:start(erlbean).
 
 

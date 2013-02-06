@@ -10,7 +10,7 @@
 
 ebsetup_test_() ->
     [
-        {"Epgsql Adapter can be started and has a registered name"
+        {"Epgsql Adapter can be started and has a registered name\n"
          " and Connect to a test database with credentials test:test",
             {setup, local, fun startapp/0, fun stopapp/1,
              fun(started) ->
@@ -61,7 +61,8 @@ queries_test_() ->
             ]}
           end
         },
-        {"Adapter should be able to alter a table and create columns or change their type",
+        {"Adapter should be able to alter a table and create columns\n"
+         "  or change their type",
           setup, local,
           fun () ->
             started = startapp()
@@ -99,18 +100,75 @@ queries_test_() ->
         }
     ]}.
 
+internals_test_() ->
+    [
+        {"Adapter function checks if table exists",
+            {
+                setup, local,
+                fun () -> started = startapp(), populated = populate(), started end,
+                fun (started) -> depopulate(), stopapp(started) end,
+                fun (started) ->
+                    Toolkit = eb:get_toolkit(),
+                    State = eb_adapter_epgsql:get_state(Toolkit),
+                    S = eb_adapter_epgsql,
+                    {inorder, [
+                        ?_assertMatch(
+                            true,
+                            S:table_exists(<<"t_test_a">>, State)
+                            andalso S:table_exists(<<"t_test_a">>, State)
+                        ),
+                        ?_assertMatch(
+                            false,
+                            S:table_exists(<<"notable">>, State)
+                        )
+                    ]}
+                end
+            }
+        },
+        {"Adapter can create a table",
+            {
+                setup, local,
+                fun () -> started = startapp(), populated = populate(), started end,
+                fun (started) -> depopulate(), stopapp(started) end,
+                fun (started) ->
+                    Toolkit = eb:get_toolkit(),
+                    State = eb_adapter_epgsql:get_state(Toolkit),
+                    S = eb_adapter_epgsql,
+                    S:create_table(<<"anewtable">>, State),
+                    {inorder, [
+                        ?_assertMatch(
+                            true,
+                            S:table_exists(<<"anewtable">>, State)
+                        )
+                    ]}
+                end
+            }
+        }
+    ].
 
 startapp() ->
     ok = application:start(erlbean),
-    ok = application:start(gproc),
     eb:setup(epgsql,?PGTESTCONF),
     started.
 
 stopapp(_) ->
     error_logger:tty(false),
-    ok = application:stop(gproc),
     ok = application:stop(erlbean),
     error_logger:tty(true).
+
+populate() ->
+    % error_logger:info_msg("POPULATING~n~n"),
+  q("create table t_test_a (id serial primary key, txt varchar(10))"),
+  q("create table t_test_b (id serial primary key, txt varchar(10))"),
+  populated.
+
+depopulate() ->
+    % error_logger:info_msg("DE-POPULATING~n~n"),
+  q("drop table t_test_a"),
+  q("drop table t_test_b"),
+  {ok, [], []} = q("drop table if exists anewtable"),
+  ok.
+
 
 q(Q) -> eb_adapter_epgsql:exec(eb:get_toolkit(), Q).
 qb(Q, Bindings) -> eb_adapter_epgsql:exec(eb:get_toolkit(), Q, Bindings).

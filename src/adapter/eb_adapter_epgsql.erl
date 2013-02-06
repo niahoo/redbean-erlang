@@ -20,6 +20,12 @@
 %% eb_adapter callbacks
 -export([store/2,exec/2,exec/3]).
 
+%% TEST EXPORT
+-ifdef(TEST).
+-export([get_state/1,set_state/2,get_tables/1,table_exists/2]).
+-export([create_table/2,is_valid_table_name/1]).
+ -endif.
+
 -define(SERVER, ?MODULE).
 
 -record(state, {c}).
@@ -46,7 +52,12 @@ exec(Toolkit, Query) ->
 exec(Toolkit, Query, Bindings) ->
     gen_server:call(Toolkit, {exec, Query, Bindings}).
 
+%%%===================================================================
+%%% TEST API
+%%%===================================================================
 
+get_state(Toolkit) -> gen_server:call(Toolkit, get_state).
+set_state(Toolkit, State) -> gen_server:call(Toolkit, {set_state, State}).
 
 %%%===================================================================
 %%% gen_server callbacks
@@ -91,15 +102,21 @@ init([Conf]) ->
 
 %% ici c'est une q sans paramètres
 handle_call({exec, Query}, _From, #state{c=C}=State) ->
-    Reply = pgsql:equery(C, Query),
+    Reply = q(C, Query),
     tty_db_if_error(Reply),
     {reply, Reply, State};
 
 %% Query with bindings
 handle_call({exec, Query, Bindings}, _From, #state{c=C}=State) ->
-    Reply = pgsql:equery(C, Query, Bindings),
+    Reply = q(C, Query, Bindings),
     tty_db_if_error(Reply),
     {reply, Reply, State};
+
+
+handle_call(get_state, _From, State) ->
+    {reply, State, State};
+handle_call({set_state, NewState}, _From, State) ->
+    {reply, State, NewState};
 
 handle_call(_Request, _From, State) ->
     Reply = ok,
@@ -159,6 +176,31 @@ code_change(_OldVsn, State, _Extra) ->
 %%%===================================================================
 %%% Internal functions
 %%%===================================================================
+
+q(C, Query) -> pgsql:equery(C, Query).
+q(C, Query, Bindings) -> pgsql:equery(C, Query, Bindings).
+
+
+get_tables(State) ->
+    {ok, _Columns, Tables} = q(State#state.c,
+        "select table_name from information_schema.tables
+        where table_schema = 'public'"),
+    {ok, [T || {T} <- Tables]}.
+
+table_exists(Table, State) ->
+    {ok, Tables} = get_tables(State),
+    lists:member(Table,Tables).
+
+create_table(Name, State) when is_binary(Name)->
+    create_table(binary_to_list(Name), State);
+
+create_table(Name, #state{c=C}) when is_list(Name) ->
+    true = is_valid_table_name(Name),
+    {ok, _Columns, []} = q(C, "create table " ++ Name ++ " (id SERIAL PRIMARY KEY);"),
+    ok.
+
+
+is_valid_table_name(Name) -> true.
 
 
 tty_db_if_error({error, #error{severity=S, code=C, message=M, extra=X}}) ->

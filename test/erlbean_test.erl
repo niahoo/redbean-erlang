@@ -4,7 +4,8 @@
 
 
 erlbean_start_test_() ->
-    {setup, local,
+    {"Application erlbean can start",
+     setup, local,
      fun() -> ok end,
      fun(ok) ->
         error_logger:tty(false),
