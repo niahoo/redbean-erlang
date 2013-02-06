@@ -3,6 +3,9 @@
 -behaviour(gen_server).
 -behaviour(eb_adapter).
 
+-include_lib("epgsql/include/pgsql.hrl").
+
+
 %% API
 -export([start_link/2]).
 
@@ -61,7 +64,7 @@ exec(Toolkit, Query, Bindings) ->
 %% @end
 %%--------------------------------------------------------------------
 init([Conf]) ->
-    error_logger:info_msg("Connecting to postgres ~p ~n",[?MODULE]),
+    % error_logger:info_msg("Connecting to postgres ~p ~n~n~n",[?MODULE]),
     Host     = proplists:get_value(host,    Conf, "localhost"),
     Username = proplists:get_value(user,    Conf),
     Password = proplists:get_value(password,Conf),
@@ -89,11 +92,13 @@ init([Conf]) ->
 %% ici c'est une q sans paramètres
 handle_call({exec, Query}, _From, #state{c=C}=State) ->
     Reply = pgsql:equery(C, Query),
+    tty_db_if_error(Reply),
     {reply, Reply, State};
 
 %% Query with bindings
 handle_call({exec, Query, Bindings}, _From, #state{c=C}=State) ->
     Reply = pgsql:equery(C, Query, Bindings),
+    tty_db_if_error(Reply),
     {reply, Reply, State};
 
 handle_call(_Request, _From, State) ->
@@ -154,3 +159,16 @@ code_change(_OldVsn, State, _Extra) ->
 %%%===================================================================
 %%% Internal functions
 %%%===================================================================
+
+
+tty_db_if_error({error, #error{severity=S, code=C, message=M, extra=X}}) ->
+    error_logger:warning_msg(
+        "PostgreSQL returned an error ~n"
+        "severity : ~s~n"
+        "code :     ~s~n"
+        "message :  ~s~n"
+        "extra :    ~p~n~n~n"
+        ,[S,C,M,X]
+    );
+
+tty_db_if_error(_) -> ok.

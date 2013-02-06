@@ -1,12 +1,10 @@
 -module(eb_adapter_epgsql_test).
 
+-compile([nowarn_unused_function]).
+
 -include_lib("eunit/include/eunit.hrl").
 -include_lib("erlbean/include/erlbean.hrl").
-
-
-
--define(TESTCONF, [{user,"test"},{password,"test"},{host,"localhost"},{opts,[{database,"test"}]}]).
--define(PG_EMPTY_RET, {ok,[],[]}).
+-include_lib("erlbean/include/testcfg.hrl").
 
 
 
@@ -16,7 +14,7 @@ ebsetup_test_() ->
          " and Connect to a test database with credentials test:test",
             {setup, local, fun startapp/0, fun stopapp/1,
              fun(started) ->
-                {ok, Pid} = eb:setup(epgsql, my_test_name,?TESTCONF),
+                {ok, Pid} = eb:setup(epgsql, my_test_name,?PGTESTCONF),
                 ?_assertMatch(_P when is_pid(_P), Pid),
                 ?_assertEqual(true, erlang:is_process_alive(Pid)),
                 ?_assertEqual(Pid, whereis(my_test_name))
@@ -36,11 +34,10 @@ queries_test_() ->
             )
           end
         },
-        {"Adapter should be able to fire a query with $$ bindings",
+        {"Adapter should be able to fire a query with typed bindings",
           setup, local, fun startapp/0, fun stopapp/1,
           fun(started) ->
-            % ?_assertMatch( {ok, _Columns, [{8}]}, eb_adapter_epgsql:exec(eb:get_toolkit(), "SELECT $1 + $2;", [3,5]) )
-            []
+            ?_assertMatch( {ok, _Columns, [{8}]}, eb_adapter_epgsql:exec(eb:get_toolkit(), "SELECT $1::integer + $2; ", [5,3]) )
           end
         },
         {"Adapter should be able to create and drop a table",
@@ -64,7 +61,7 @@ queries_test_() ->
             ]}
           end
         },
-        {"Adapter should be able to alter a table and create a column",
+        {"Adapter should be able to alter a table and create columns or change their type",
           setup, local,
           fun () ->
             started = startapp()
@@ -81,10 +78,20 @@ queries_test_() ->
                 {ok, _Columns, []},
                 q("select column_name, data_type from information_schema.columns where table_name='t_test_alter'")
               ),
-              [?_assertMatch({ok, _Columns, []},q("alter table t_test_alter add id serial primary key")),
-               ?_assertMatch({ok, _Columns, []},q("alter table t_test_alter add eterm bytea"))],
+              [
+               ?_assertMatch({ok, _Columns, []},q("alter table t_test_alter add eterm bytea")),
+               ?_assertMatch({ok, _Columns, []},q("alter table t_test_alter add id serial primary key"))
+              ],
               ?_assertMatch(
-                {ok, _Columns, [{<<"id">>, <<"integer">>},{<<"eterm">>,<<"bytea">>}]},
+                {ok, _Columns, [{<<"eterm">>,<<"bytea">>},{<<"id">>, <<"integer">>}]},
+                q("select column_name, data_type from information_schema.columns where table_name='t_test_alter'")
+              ),
+              ?_assertMatch(
+                {ok, _Columns, []},
+                q("alter table t_test_alter alter column eterm type varchar(10)")
+              ),
+              ?_assertMatch(
+                {ok, _Columns, [{<<"eterm">>,<<"character varying">>},{<<"id">>, <<"integer">>}]},
                 q("select column_name, data_type from information_schema.columns where table_name='t_test_alter'")
               )
             ]}
@@ -96,12 +103,14 @@ queries_test_() ->
 startapp() ->
     ok = application:start(erlbean),
     ok = application:start(gproc),
-    eb:setup(epgsql,?TESTCONF),
+    eb:setup(epgsql,?PGTESTCONF),
     started.
 
 stopapp(_) ->
+    error_logger:tty(false),
     ok = application:stop(gproc),
-    ok = application:stop(erlbean).
+    ok = application:stop(erlbean),
+    error_logger:tty(true).
 
 q(Q) -> eb_adapter_epgsql:exec(eb:get_toolkit(), Q).
 qb(Q, Bindings) -> eb_adapter_epgsql:exec(eb:get_toolkit(), Q, Bindings).

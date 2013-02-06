@@ -1,12 +1,8 @@
 -module(eb_db_test).
 
-
 -include_lib("eunit/include/eunit.hrl").
 -include_lib("erlbean/include/erlbean.hrl").
-
-
-
--define(TESTCONF, [{user,"test"},{password,"test"},{host,"localhost"},{opts,[{database,"test"}]}]).
+-include_lib("erlbean/include/testcfg.hrl").
 
 
 % create_table_test_qzdqzd() ->
@@ -27,14 +23,13 @@
 startapp() ->
     ok = application:start(erlbean),
     ok = application:start(gproc),
-    eb:setup(epgsql,?TESTCONF),
+    eb:setup(epgsql,?PGTESTCONF),
     started.
 
 
 stopapp(_) ->
-
+    error_logger:tty(false),
     ok = application:stop(gproc),
-    ok = application:stop(erlbean).
-
-
+    ok = application:stop(erlbean),
+    error_logger:tty(true).
 
