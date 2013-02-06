@@ -6,7 +6,7 @@
 
 
 -define(TESTCONF, [{user,"test"},{password,"test"},{host,"localhost"},{opts,[{database,"test"}]}]).
-
+-define(PG_NO_RETURN, {ok,[],[]}).
 
 ebsetup_test_() ->
     [
@@ -23,27 +23,49 @@ ebsetup_test_() ->
         }
     ].
 
-simple_query_test_() ->
+queries_test_() ->
     [
         {"Adapter should be able to fire a query",
-            {setup, local, fun startapp/0, fun stopapp/1,
-             fun(started) ->
-                ?_assertMatch({ok, _Columns, [{8}]},
-                              eb_adapter_epgsql:exec(eb:get_toolkit(), "SELECT 3 + 5"))
+          setup, local, fun startapp/0, fun stopapp/1,
+          fun(started) ->
+            ?_assertMatch({ok, _Columns, [{8}]},
+                            eb_adapter_epgsql:exec(eb:get_toolkit(), "SELECT 3 + 5;"))
 
-             end
-            }
-        }
-    ].
+          end
+        },
+        {"Adapter should be able to create and drop a table",
+          setup, local, fun startapp/0, fun stopapp/1,
+          fun(started) ->
+            eb_adapter_epgsql:exec(eb:get_toolkit(), "drop table IF EXISTS t_test_1 ;"),
+            {inorder ,[
+              ?_assertMatch(
+                {ok, _Columns, []},
+                eb_adapter_epgsql:exec(
+                  eb:get_toolkit(),
+                  "select table_name from information_schema.tables where table_schema = 'public';")
+              ),
+              ?_assertMatch(
+                {ok, _Columns, []},
+                eb_adapter_epgsql:exec(
+                  eb:get_toolkit(),
+                  "create table t_test_1 (id SERIAL PRIMARY KEY);")
+              ),
+              ?_assertMatch(
+                {ok, _Columns, [{<<"t_test_1">>}]},
+                eb_adapter_epgsql:exec(
+                  eb:get_toolkit(),
+                  "select table_name from information_schema.tables where table_schema = 'public';")
+              ),
+              ?_assertMatch(
+                ?PG_NO_RETURN,
+                eb_adapter_epgsql:exec(
+                  eb:get_toolkit(),
+                  "drop table t_test_1 ;")
+              )
 
-create_table_test_() ->
-    [
-        {"Adapter should be able to create a table",
-            {setup, local, fun startapp/0, fun stopapp/1,
-             fun(started) ->
-                ?_assertEqual(1,1) %%@todo
-             end
-            }
+
+            ]}
+          end
         }
     ].
 
