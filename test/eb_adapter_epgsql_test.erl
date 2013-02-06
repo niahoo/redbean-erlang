@@ -10,7 +10,6 @@
 
 
 
-
 ebsetup_test_() ->
     [
         {"Epgsql Adapter can be started and has a registered name"
@@ -37,13 +36,11 @@ queries_test_() ->
             )
           end
         },
-        {"Adapter should be able to fire a query with bindings",
+        {"Adapter should be able to fire a query with $$ bindings",
           setup, local, fun startapp/0, fun stopapp/1,
           fun(started) ->
-            ?_assertMatch(
-              {ok, _Columns, [{8}]},
-              eb_adapter_epgsql:exec(eb:get_toolkit(), "SELECT 3 + 5;")
-            )
+            % ?_assertMatch( {ok, _Columns, [{8}]}, eb_adapter_epgsql:exec(eb:get_toolkit(), "SELECT $1 + $2;", [3,5]) )
+            []
           end
         },
         {"Adapter should be able to create and drop a table",
@@ -84,12 +81,10 @@ queries_test_() ->
                 {ok, _Columns, []},
                 q("select column_name, data_type from information_schema.columns where table_name='t_test_alter'")
               ),
+              [?_assertMatch({ok, _Columns, []},q("alter table t_test_alter add id serial primary key")),
+               ?_assertMatch({ok, _Columns, []},q("alter table t_test_alter add eterm bytea"))],
               ?_assertMatch(
-                {ok, _Columns, []},
-                q("alter table t_test_alter add id serial primary key")
-              ),
-              ?_assertMatch(
-                {ok, _Columns, [{<<"id">>, <<"integer">>}]},
+                {ok, _Columns, [{<<"id">>, <<"integer">>},{<<"eterm">>,<<"bytea">>}]},
                 q("select column_name, data_type from information_schema.columns where table_name='t_test_alter'")
               )
             ]}
@@ -105,7 +100,6 @@ startapp() ->
     started.
 
 stopapp(_) ->
-    error_logger:info_msg("STOP STOP STOP~n"),
     ok = application:stop(gproc),
     ok = application:stop(erlbean).
 

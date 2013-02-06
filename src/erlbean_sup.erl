@@ -26,6 +26,6 @@ init([]) ->
                permanent, 2000, worker, [erlbean_kickstart]},
     Children = [Element],
     RestartStrategy = {simple_one_for_one, 1, 10},
-    error_logger:info_msg("Supervisor ~p config done~n", [?MODULE]),
+    % error_logger:info_msg("Supervisor ~p config done~n", [?MODULE]),
     {ok, {RestartStrategy, Children}}.
 

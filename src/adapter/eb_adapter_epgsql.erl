@@ -40,7 +40,8 @@ store(_,_) -> fuck.
 exec(Toolkit, Query) ->
     gen_server:call(Toolkit, {exec, Query}).
 
-exec(_,_,_) -> fuck.
+exec(Toolkit, Query, Bindings) ->
+    gen_server:call(Toolkit, {exec, Query, Bindings}).
 
 
 
@@ -67,7 +68,7 @@ init([Conf]) ->
     Opts     = proplists:get_value(opts,    Conf, []),
     true = is_list(Opts),
     {ok, C}  = pgsql:connect(Host, Username, Password, Opts),
-    error_logger:info_msg("Connection to postgres ok : ~p~n",[C]),
+    % error_logger:info_msg("Connection to postgres ok : ~p~n",[C]),
     {ok, #state{c=C}}.
 
 %%--------------------------------------------------------------------
@@ -88,6 +89,11 @@ init([Conf]) ->
 %% ici c'est une q sans paramètres
 handle_call({exec, Query}, _From, #state{c=C}=State) ->
     Reply = pgsql:equery(C, Query),
+    {reply, Reply, State};
+
+%% Query with bindings
+handle_call({exec, Query, Bindings}, _From, #state{c=C}=State) ->
+    Reply = pgsql:equery(C, Query, Bindings),
     {reply, Reply, State};
 
 handle_call(_Request, _From, State) ->
