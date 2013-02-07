@@ -5,6 +5,42 @@
 -include_lib("erlbean/include/testcfg.hrl").
 
 
+ebsetup_test_() ->
+    [
+        {"Epgsql Adapter can be started and has a registered name\n"
+         " and Connect to a test database with credentials test:test",
+            {setup, local, fun startapp/0, fun stopapp/1,
+             fun(started) ->
+                {ok, SupPid} = eb:setup(epgsql, my_test_name, ?PGTESTCONF), %% spawn du toolkit supervisor
+                ?_assertMatch(_P when is_pid(_P), SupPid), %% test du toolkit supervisor
+                ?_assertEqual(true, erlang:is_process_alive(SupPid)), %% test du toolkit supervisor
+                %% ici my_test_name a été enregistré par eb_db, pas par le superviseur
+                ?_assertEqual(true, lists:member(my_test_name, erlang:registered(my_test_name))),
+                ?_assertNot(SupPid == whereis(my_test_name))
+             end
+            }
+        }
+    ].
+
+
+internals_test_() ->
+    [
+        {"If a bean is not tainted, :store() simply return it",
+            {
+                setup, local,
+                fun startapp/0,
+                fun stopapp/1,
+                fun (started) ->
+                    {eb_bean, Bean} = eb:dispense(bean),
+                    Bean2 = Bean#bean{tainted=false},
+                    {eb_bean, Bean3} = eb:store({eb_bean, Bean2}),
+                    {inorder, [
+                        ?_assertMatch(Bean2, Bean3)
+                    ]}
+                end
+            }
+        }
+    ].
 
 
 startapp() ->

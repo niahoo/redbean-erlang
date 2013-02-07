@@ -7,7 +7,7 @@
 
 
 %% API
--export([start_link/2]).
+-export([start_link/1]).
 
 %% gen_server callbacks
 -export([init/1,
@@ -24,8 +24,8 @@
 %% TEST EXPORT
 -ifdef(TEST).
 -export([get_state/1,set_state/2,get_tables/1,table_exists/2]).
--export([create_table/2,is_valid_table_name/1]).
- -endif.
+-export([create_table/2,check/1]).
+-endif.
 
 -define(SERVER, ?MODULE).
 
@@ -42,8 +42,8 @@
 %% @spec start_link() -> {ok, Pid} | ignore | {error, Error}
 %% @end
 %%--------------------------------------------------------------------
-start_link(Name,Conf) ->
-    {ok, _Pid} = gen_server:start_link({local, Name}, ?MODULE, [Conf], []).
+start_link(Conf) ->
+    {ok, _Pid} = gen_server:start_link(?MODULE, [Conf], []).
 
 
 store(_,_) -> fuck.
@@ -125,8 +125,8 @@ handle_call({exec, Query, Bindings}, _From, #state{c=C}=State) ->
 
 handle_call(get_state, _From, State) ->
     {reply, State, State};
-handle_call({set_state, NewState}, _From, State) ->
-    {reply, State, NewState};
+handle_call({set_state, NewState}, _From, _State) ->
+    {reply, ok, NewState};
 
 handle_call(_Request, _From, State) ->
     Reply = ok,
@@ -205,12 +205,10 @@ create_table(Name, State) when is_binary(Name)->
     create_table(binary_to_list(Name), State);
 
 create_table(Name, #state{c=C}) when is_list(Name) ->
-    true = is_valid_table_name(Name),
+    true = check({table,Name}),
     {ok, _Columns, []} = q(C, "create table " ++ Name ++ " (id SERIAL PRIMARY KEY);"),
     ok.
 
-
-is_valid_table_name(Name) -> true.
 
 
 tty_db_if_error({error, #error{severity=S, code=C, message=M, extra=X}}) ->

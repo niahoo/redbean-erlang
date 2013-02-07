@@ -8,20 +8,6 @@
 
 
 
-ebsetup_test_() ->
-    [
-        {"Epgsql Adapter can be started and has a registered name\n"
-         " and Connect to a test database with credentials test:test",
-            {setup, local, fun startapp/0, fun stopapp/1,
-             fun(started) ->
-                {ok, Pid} = eb:setup(epgsql, my_test_name,?PGTESTCONF),
-                ?_assertMatch(_P when is_pid(_P), Pid),
-                ?_assertEqual(true, erlang:is_process_alive(Pid)),
-                ?_assertEqual(Pid, whereis(my_test_name))
-             end
-            }
-        }
-    ].
 
 queries_test_() ->
     {inorder, [
@@ -30,14 +16,14 @@ queries_test_() ->
           fun(started) ->
             ?_assertMatch(
               {ok, _Columns, [{8}]},
-              eb_adapter_epgsql:exec(eb:get_toolkit(), "SELECT 3 + 5;")
+              eb_adapter_epgsql:exec(dba(), "SELECT 3 + 5;")
             )
           end
         },
         {"Adapter should be able to fire a query with typed bindings",
           setup, local, fun startapp/0, fun stopapp/1,
           fun(started) ->
-            ?_assertMatch( {ok, _Columns, [{8}]}, eb_adapter_epgsql:exec(eb:get_toolkit(), "SELECT $1::integer + $2; ", [5,3]) )
+            ?_assertMatch( {ok, _Columns, [{8}]}, eb_adapter_epgsql:exec(dba(), "SELECT $1::integer + $2; ", [5,3]) )
           end
         },
         {"Adapter should be able to create and drop a table",
@@ -108,8 +94,8 @@ internals_test_() ->
                 fun () -> started = startapp(), populated = populate(), started end,
                 fun (started) -> depopulate(), stopapp(started) end,
                 fun (started) ->
-                    Toolkit = eb:get_toolkit(),
-                    State = eb_adapter_epgsql:get_state(Toolkit),
+                    Adapter = dba(),
+                    State = eb_adapter_epgsql:get_state(Adapter),
                     S = eb_adapter_epgsql,
                     {inorder, [
                         ?_assertMatch(
@@ -131,8 +117,8 @@ internals_test_() ->
                 fun () -> started = startapp(), populated = populate(), started end,
                 fun (started) -> depopulate(), stopapp(started) end,
                 fun (started) ->
-                    Toolkit = eb:get_toolkit(),
-                    State = eb_adapter_epgsql:get_state(Toolkit),
+                    Adapter = dba(),
+                    State = eb_adapter_epgsql:get_state(Adapter),
                     S = eb_adapter_epgsql,
                     S:create_table(<<"anewtable">>, State),
                     {inorder, [
@@ -201,9 +187,9 @@ depopulate() ->
   {ok, [], []} = q("drop table if exists anewtable"),
   ok.
 
-
-q(Q) -> eb_adapter_epgsql:exec(eb:get_toolkit(), Q).
-qb(Q, Bindings) -> eb_adapter_epgsql:exec(eb:get_toolkit(), Q, Bindings).
+dba() -> eb_db:get_adapter(eb_db:get_toolkit()).
+q(Q) -> eb_adapter_epgsql:exec(dba(), Q).
+qb(Q, Bindings) -> eb_adapter_epgsql:exec(dba(), Q, Bindings).
 
 
 
