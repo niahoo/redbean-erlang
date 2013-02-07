@@ -26,8 +26,6 @@
      code_change/3]).
 
 
--record(state, {dba}).
-
 
 %% ===================================================================
 %% Global API
@@ -65,11 +63,11 @@ store({eb_bean, #bean{tainted=false}}=Wrapper) ->
     %% @todo check if processlist
     Wrapper;
 
-store({eb_bean, #bean{}=Bean}=Wrapper) ->
-    store_bean(Bean).
+store({eb_bean, #bean{}=Bean}) ->
+    {ok, wrap(store_bean(Bean))}.
 
 
-store_bean(#bean{}=Bean) ->
+store_bean(#bean{}=_Bean) ->
     Toolkit = get_toolkit(),
     Toolkit.
 
@@ -91,15 +89,16 @@ store_bean(#bean{}=Bean) ->
 %%--------------------------------------------------------------------
 init([Adapter, Conf, FMode]) ->
     %% Selon l'adapter qu'on nous a donné, on trouve le bon module
-    AdapterModule = erlbean:adapter_module(Adapter, FMode),
+    AdapterModule = erlbean:adapter_module(Adapter),
 
     % error_logger:info_msg("Starting dba for ~p~n", [process_info(self(), registered_name)]),
 
     {ok, Pid} = AdapterModule:start_link(Conf),
 
+    Module = fmode_module(FMode),
     % error_logger:info_msg("Dba pid is ~p~n", [Pid]),
 
-    {ok, #state{dba=Pid}}.
+    {ok, #ebdb{dba=Pid, m=Module}}.
 
 %%--------------------------------------------------------------------
 %% @private
@@ -116,7 +115,10 @@ init([Adapter, Conf, FMode]) ->
 %% @end
 %%--------------------------------------------------------------------
 handle_call(get_adapter, _From, State) ->
-    {reply, State#state.dba, State};
+    {reply, State#ebdb.dba, State};
+
+handle_call(freeze, _From, State) ->
+    {reply, ok, State#ebdb{m=fmode_module(production)}};
 
 handle_call(_Request, _From, State) ->
     Reply = {?MODULE, unknown_request},
@@ -177,4 +179,6 @@ code_change(_OldVsn, State, _Extra) ->
 %%% Internal functions
 %%%===================================================================
 
+wrap(#bean{}=B) -> {eb_bean, B}.
 
+fmode_module(fluid) -> eb_db_fluid.

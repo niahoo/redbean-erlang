@@ -6,3 +6,5 @@
                props=?DICT:new(),
                tainted=true :: boolean()
               }).
+
+-record(ebdb, {dba :: pid(), m :: atom()}).
