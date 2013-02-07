@@ -19,6 +19,7 @@
 
 %% eb_adapter callbacks
 -export([store/2,exec/2,exec/3]).
+-export([quote/1, check/1]).
 
 %% TEST EXPORT
 -ifdef(TEST).
@@ -51,6 +52,15 @@ exec(Toolkit, Query) ->
 
 exec(Toolkit, Query, Bindings) ->
     gen_server:call(Toolkit, {exec, Query, Bindings}).
+
+quote(Name) -> [$" | Name] ++ [$"|[]].
+
+check({table, Name}) ->
+    {ok, Re} = re:compile("^[a-z_]{1,63}$"),
+    case re:run(Name,Re)
+        of {match, _} -> true
+         ; _ -> false
+    end.
 
 %%%===================================================================
 %%% TEST API

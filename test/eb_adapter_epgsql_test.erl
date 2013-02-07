@@ -143,12 +143,44 @@ internals_test_() ->
                     ]}
                 end
             }
+        },
+        {"Adapter can quote a table name",
+            {
+                setup, local,
+                fun () -> ok end,
+                fun (ok) ->
+                    S = eb_adapter_epgsql,
+                    [?_assertMatch("\"test\"", S:quote("test")),
+                     ?_assertMatch([$",$"], S:quote(""))]
+                end
+            }
+        },
+        {"Adapter can check a table name",
+            {
+                setup, local,
+                fun () -> ok end,
+                fun (ok) ->
+                    S = eb_adapter_epgsql,
+                    [?_assertMatch(false, S:check({table, "contains\"quote"})),
+                     ?_assertMatch(false, S:check({table, "contains-tr"})),
+                     ?_assertMatch(false, S:check({table, "contains$doll"})),
+                     ?_assertMatch(false, S:check({table, "contains.dot"})),
+                     ?_assertMatch(false, S:check({table, "héhéhé"})),
+                     ?_assertMatch(false, S:check({table, "noUPPERCASEallowed"})),
+                     ?_assertMatch(false, S:check({table, "i_Am_A_Big_Name_That_Is_Longer_Than_63_Characters_and_that_is_not_allowed"})),
+                     ?_assertMatch(true , S:check({table, "iamok"})),
+                     ?_assertMatch(true , S:check({table, "underscores_are_ok"}))
+                    ]
+                end
+            }
         }
     ].
 
 startapp() ->
     ok = application:start(erlbean),
     eb:setup(epgsql,?PGTESTCONF),
+    q("drop schema public cascade;"),
+    q("create schema public;"),
     started.
 
 stopapp(_) ->
