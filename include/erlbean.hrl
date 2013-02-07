@@ -7,4 +7,6 @@
                tainted=true :: boolean()
               }).
 
--record(ebdb, {dba :: pid(), m :: atom()}).
+-record(ebdb, { dba :: pid(),
+                dbam :: atom(),
+                m :: atom()}).

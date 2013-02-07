@@ -1,3 +1,6 @@
+
+%%% !! Test fuid mode
+
 -module(eb_db_test).
 
 -include_lib("eunit/include/eunit.hrl").
@@ -39,6 +42,37 @@ internals_test_() ->
                     ]}
                 end
             }
+        },
+        {"If a bean is tainted, :store() should create a table",
+            {
+                setup, local,
+                fun startapp/0,
+                fun stopapp/1,
+                fun (started) ->
+                    Bean = eb:dispense(bean),
+                    S = eb_adapter_epgsql,
+                    DBAState = S:get_state(dba()),
+                    {inorder, [
+                        ?_assertNot(S:x_table_exists(<<"mytype">>, DBAState)),
+                        ?_assertMatch({ok, _}, eb_db:store(Bean)),
+                        ?_assert(S:x_table_exists(<<"mytype">>, DBAState))
+                    ]}
+                end
+            }
+        },
+        {"If a bean is tainted, :store() should make it not tainted",
+            {
+                setup, local,
+                fun startapp/0,
+                fun stopapp/1,
+                fun (started) ->
+                    Bean = eb:dispense(bean),
+                    {ok, Bean2} = eb_db:store(Bean),
+                    {inorder, [
+                        ?_assertNot(Bean2:tainted())
+                    ]}
+                end
+            }
         }
     ].
 
@@ -54,3 +88,5 @@ stopapp(_) ->
     ok = application:stop(erlbean),
     error_logger:tty(true).
 
+tk() -> eb_db:get_toolkit().
+dba() -> eb_db:get_adapter(tk()).

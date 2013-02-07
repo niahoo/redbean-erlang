@@ -7,7 +7,7 @@
 
 
 %% API
--export([start_link/1]).
+-export([start_link/1,quote/1,check/1]).
 
 %% gen_server callbacks
 -export([init/1,
@@ -18,13 +18,14 @@
      code_change/3]).
 
 %% eb_adapter callbacks
--export([store/2,exec/2,exec/3]).
--export([quote/1, check/1]).
+-export([exec/2,exec/3]).
+-export([quote/1]).
+-export([table_exists/2,create_table/2]).
 
 %% TEST EXPORT
 -ifdef(TEST).
--export([get_state/1,set_state/2,get_tables/1,table_exists/2]).
--export([create_table/2,check/1]).
+-export([get_state/1,set_state/2,get_tables/1,x_table_exists/2]).
+-export([x_create_table/2]).
 -endif.
 
 -define(SERVER, ?MODULE).
@@ -42,16 +43,9 @@
 %% @spec start_link() -> {ok, Pid} | ignore | {error, Error}
 %% @end
 %%--------------------------------------------------------------------
+
 start_link(Conf) ->
     {ok, _Pid} = gen_server:start_link(?MODULE, [Conf], []).
-
-
-store(_,_) -> fuck.
-exec(Toolkit, Query) ->
-    gen_server:call(Toolkit, {exec, Query}).
-
-exec(Toolkit, Query, Bindings) ->
-    gen_server:call(Toolkit, {exec, Query, Bindings}).
 
 quote(Name) -> [$" | Name] ++ [$"|[]].
 
@@ -63,11 +57,33 @@ check({table, Name}) ->
     end.
 
 %%%===================================================================
+%%% SERVER API
+%%%===================================================================
+
+
+exec(Pid, Query) ->
+    gen_server:call(Pid, {exec, Query}).
+
+exec(Pid, Query, Bindings) ->
+    gen_server:call(Pid, {exec, Query, Bindings}).
+
+
+table_exists(Pid, Name) when is_atom(Name) ->
+    table_exists(Pid, list_to_binary(atom_to_list(Name)));
+table_exists(Pid, Name) when is_binary(Name) ->
+    gen_server:call(Pid, {table_exists, Name}).
+
+create_table(Pid, Name) when is_atom(Name) ->
+    create_table(Pid, list_to_binary(atom_to_list(Name)));
+create_table(Pid, Name) when is_binary(Name) ->
+    gen_server:call(Pid, {create_table, Name}).
+
+%%%===================================================================
 %%% TEST API
 %%%===================================================================
 
-get_state(Toolkit) -> gen_server:call(Toolkit, get_state).
-set_state(Toolkit, State) -> gen_server:call(Toolkit, {set_state, State}).
+get_state(Pid) -> gen_server:call(Pid, get_state).
+set_state(Pid, State) -> gen_server:call(Pid, {set_state, State}).
 
 %%%===================================================================
 %%% gen_server callbacks
@@ -122,6 +138,9 @@ handle_call({exec, Query, Bindings}, _From, #state{c=C}=State) ->
     tty_db_if_error(Reply),
     {reply, Reply, State};
 
+handle_call({table_exists, Name}, _From, #state{c=C}=State) ->
+    Reply = x_table_exists(Name, State),
+    {reply, Reply, State};
 
 handle_call(get_state, _From, State) ->
     {reply, State, State};
@@ -197,14 +216,14 @@ get_tables(State) ->
         where table_schema = 'public'"),
     {ok, [T || {T} <- Tables]}.
 
-table_exists(Table, State) ->
+x_table_exists(Table, State) ->
     {ok, Tables} = get_tables(State),
     lists:member(Table,Tables).
 
-create_table(Name, State) when is_binary(Name)->
-    create_table(binary_to_list(Name), State);
+x_create_table(Name, State) when is_binary(Name)->
+    x_create_table(binary_to_list(Name), State);
 
-create_table(Name, #state{c=C}) when is_list(Name) ->
+x_create_table(Name, #state{c=C}) when is_list(Name) ->
     true = check({table,Name}),
     {ok, _Columns, []} = q(C, "create table " ++ Name ++ " (id SERIAL PRIMARY KEY);"),
     ok.

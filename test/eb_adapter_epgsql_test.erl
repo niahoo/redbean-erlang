@@ -100,12 +100,16 @@ internals_test_() ->
                     {inorder, [
                         ?_assertMatch(
                             true,
-                            S:table_exists(<<"t_test_a">>, State)
-                            andalso S:table_exists(<<"t_test_a">>, State)
+                            S:x_table_exists(<<"t_test_a">>, State)
+                            andalso S:x_table_exists(<<"t_test_a">>, State)
                         ),
                         ?_assertMatch(
                             false,
-                            S:table_exists(<<"notable">>, State)
+                            S:x_table_exists(<<"notable">>, State)
+                        ),
+                        ?_assertMatch(
+                            false,
+                            S:table_exists(dba(), <<"notable">>)
                         )
                     ]}
                 end
@@ -120,11 +124,11 @@ internals_test_() ->
                     Adapter = dba(),
                     State = eb_adapter_epgsql:get_state(Adapter),
                     S = eb_adapter_epgsql,
-                    S:create_table(<<"anewtable">>, State),
+                    S:x_create_table(<<"anewtable">>, State),
                     {inorder, [
                         ?_assertMatch(
                             true,
-                            S:table_exists(<<"anewtable">>, State)
+                            S:x_table_exists(<<"anewtable">>, State)
                         )
                     ]}
                 end

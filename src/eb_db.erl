@@ -42,7 +42,7 @@ get_toolkit() ->
             gproc:reg({n,l,eb_toolkit}, default_toolkit),
             get_toolkit()
     end.
-
+tk() -> get_toolkit().
 
 %% ===================================================================
 %% API
@@ -64,12 +64,13 @@ store({eb_bean, #bean{tainted=false}}=Wrapper) ->
     Wrapper;
 
 store({eb_bean, #bean{}=Bean}) ->
-    {ok, wrap(store_bean(Bean))}.
+    {ok, NewBean} = store_bean(Bean),
+    {ok, wrap(NewBean)}.
 
 
-store_bean(#bean{}=_Bean) ->
-    Toolkit = get_toolkit(),
-    Toolkit.
+store_bean(#bean{}=Bean) ->
+    {ok, NewBean} = gen_server:call(tk(), {store,Bean}),
+    {ok, NewBean}.
 
 
 %%%===================================================================
@@ -98,7 +99,7 @@ init([Adapter, Conf, FMode]) ->
     Module = fmode_module(FMode),
     % error_logger:info_msg("Dba pid is ~p~n", [Pid]),
 
-    {ok, #ebdb{dba=Pid, m=Module}}.
+    {ok, #ebdb{dba=Pid, dbam=AdapterModule, m=Module}}.
 
 %%--------------------------------------------------------------------
 %% @private
@@ -120,9 +121,9 @@ handle_call(get_adapter, _From, State) ->
 handle_call(freeze, _From, State) ->
     {reply, ok, State#ebdb{m=fmode_module(production)}};
 
-handle_call(_Request, _From, State) ->
-    Reply = {?MODULE, unknown_request},
-    {reply, Reply, State}.
+handle_call(AnyRequest, From, State) ->
+    Module = State#ebdb.m,
+    Module:handle(AnyRequest, From, State).
 
 %%--------------------------------------------------------------------
 %% @private

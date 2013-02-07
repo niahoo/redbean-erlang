@@ -3,31 +3,42 @@
 
 -export([new/1]).
 -export([get/2,set/2,set/3]).
+-export([tainted/1,type/1]).
 
-
+-define(WRAPPER, {eb_bean, Bean}).
 
 -include_lib("erlbean/include/erlbean.hrl").
 
 
 
 new(Type) when is_atom(Type) ->
-    {eb_bean, #bean{type=Type}}.
+    wrap(#bean{type=Type}).
 
 get(Key, {eb_bean,Bean}) when is_atom(Key) ->
     case ?DICT:find(Key, Bean#bean.props)
-        of error -> undefined
-         ; Value -> Value
+        of {ok,Value} -> {ok,Value}
+         ; error -> undefined
     end.
 
-set([], {eb_bean,_Bean}=Wrapper) ->
+set([], ?WRAPPER=Wrapper) ->
     Wrapper;
 
 set([{Key,Value}|Props], Wrapper) ->
-    NewWrapper = set(Key, Value, Wrapper),
+    {ok, NewWrapper} = set(Key, Value, Wrapper),
     set(Props, NewWrapper).
 
 
-set(Key, Value, {eb_bean,Bean}) when is_atom(Key) ->
+set(Key, Value, ?WRAPPER) when is_atom(Key) ->
    NewProps = ?DICT:store(Key, Value, Bean#bean.props),
-   {eb_bean,Bean#bean{props=NewProps}}.
+   {ok, wrap(Bean#bean{props=NewProps})}.
 
+tainted(?WRAPPER) -> Bean#bean.tainted.
+
+type(?WRAPPER) -> Bean#bean.type.
+
+%%%===================================================================
+%%% Internal functions
+%%%===================================================================
+
+
+wrap(#bean{}=Bean) -> ?WRAPPER.
