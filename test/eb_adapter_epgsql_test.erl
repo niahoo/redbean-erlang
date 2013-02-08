@@ -18,8 +18,7 @@ queries_test_() ->
               eb_adapter:exec(Pid, "SELECT 3 + 5;")
             )
           end
-        }
-        ,
+        },
         {"Adapter should be able to fire a query with typed bindings",
           setup, local, fun startapp/0, fun stopapp/1,
           fun(Pid) ->
@@ -62,45 +61,58 @@ queries_test_() ->
               ?_assertMatch(?PG_EMPTY_RET, q(Pid, "drop table t_test_create_list;"))
             ]}
           end
+        },
+        {"Adapter should be able to scan type of a value",
+          setup, local, fun startapp/0, fun stopapp/1,
+          fun(Pid) -> [
+              ?_assertMatch(integer, eb_adapter:scan_type(Pid, 1545468756454)),
+              ?_assertMatch(double,  eb_adapter:scan_type(Pid, 1.5)),
+              ?_assertMatch(text,  eb_adapter:scan_type(Pid, "Hello, my name is erlbean")),
+              ?_assertMatch(text,  eb_adapter:scan_type(Pid, <<"Hello, my name is erlbean">>)),
+              ?_assertMatch(text,  eb_adapter:scan_type(Pid, ["hello, ", [<<"my">>, "name"], [[[[[["is"]]]]]], <<"erlbean">>])),
+              ?_assertMatch(integer, eb_adapter:scan_type(Pid, 1))
+            ]
+          end
+        },
+        {"Adapter should be able to alter a table and create columns\n"
+         "  or change their type",
+          setup, local,
+          fun () ->
+            Pid = startapp()
+            , q(Pid, "create table t_test_alter ();"),
+            Pid
+          end,
+          fun (Pid) ->
+            q(Pid, "drop table if exists t_test_alter;"),
+            stopapp(Pid)
+          end,
+          fun(Pid) ->
+            {inorder, [
+              ?_assertMatch(
+                {ok, _Columns, []},
+                q(Pid, "select column_name, data_type from information_schema.columns where table_name='t_test_alter'")
+              ),
+              {inorder, [
+               ?_assertMatch(false, eb_adapter:column_exists(Pid, "t_test_alter", "eterm")),
+               ?_assertMatch(ok, eb_adapter:add_column(Pid, "eterm", "bytea")),
+               ?_assertMatch(ok, eb_adapter:add_column(Pid, "id", "integer"))
+              ]},
+              ?_assertMatch(false, eb_adapter:column_exists(Pid, "t_test_alter", "eterm")),
+              ?_assertMatch(
+                {ok, _Info, [{<<"eterm">>,<<"bytea">>},{<<"id">>, <<"integer">>}]},
+                eb_adapter:get_columns(Pid, "t_test_alter")
+              ),
+              ?_assertMatch(
+                {ok, _Columns, []},
+                eb_adapter:widen_column(Pid, "t_test_alter", "eterm")
+              ),
+              ?_assertMatch(
+                {ok, _Columns, [{<<"eterm">>,<<"character varying">>},{<<"id">>, <<"integer">>}]},
+                q(Pid, "select column_name, data_type from information_schema.columns where table_name='t_test_alter'")
+              )
+            ]}
+          end
         }
-        % ,
-        % {"Adapter should be able to alter a table and create columns\n"
-        %  "  or change their type",
-        %   setup, local,
-        %   fun () ->
-        %     Pid = startapp()
-        %     , q(Pid, "create table t_test_alter ();"),
-        %     started
-        %   end,
-        %   fun (Pid) ->
-        %     q(Pid, "drop table if exists t_test_alter;"),
-        %     stopapp(Pid)
-        %   end,
-        %   fun(started) ->
-        %     {inorder, [
-        %       ?_assertMatch(
-        %         {ok, _Columns, []},
-        %         q(Pid, "select column_name, data_type from information_schema.columns where table_name='t_test_alter'")
-        %       ),
-        %       [
-        %        ?_assertMatch(ok, eb_adapter:add_column(Pid, "eterm", "bytea")),
-        %        ?_assertMatch(ok, eb_adapter:add_column(Pid, "alter table t_test_alter add id serial primary key"))
-        %       ],
-        %       ?_assertMatch(
-        %         {ok, _Columns, [{<<"eterm">>,<<"bytea">>},{<<"id">>, <<"integer">>}]},
-        %         q(Pid, "select column_name, data_type from information_schema.columns where table_name='t_test_alter'")
-        %       ),
-        %       ?_assertMatch(
-        %         {ok, _Columns, []},
-        %         q(Pid, "alter table t_test_alter alter column eterm type varchar(10)")
-        %       ),
-        %       ?_assertMatch(
-        %         {ok, _Columns, [{<<"eterm">>,<<"character varying">>},{<<"id">>, <<"integer">>}]},
-        %         q(Pid, "select column_name, data_type from information_schema.columns where table_name='t_test_alter'")
-        %       )
-        %     ]}
-        %   end
-        % }
     ]}.
 
 q(Pid, Query) -> eb_adapter:exec(Pid, Query).

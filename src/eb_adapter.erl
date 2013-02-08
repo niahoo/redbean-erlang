@@ -27,6 +27,7 @@
 behaviour_info(callbacks) ->
     [{init,1},
      {quote, 2},
+     {scan_type, 2},
      {check, 2},
      {exec, 2},
      {create_table, 2},

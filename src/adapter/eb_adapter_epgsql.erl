@@ -5,7 +5,7 @@
 -include_lib("epgsql/include/pgsql.hrl").
 
 %% eb_adapter callbacks
--export([init/1,close/1,quote/2,check/2,exec/2,get_tables/2,create_table/2]).
+-export([init/1,close/1,quote/2,scan_type/2,check/2,exec/2,get_tables/2,create_table/2]).
 
 
 
@@ -42,6 +42,8 @@ exec(Query, C) ->
 quote(Name, C) ->
     Quoted = [$" | Name] ++ [$"|[]],
     {reply, Quoted, C}.
+
+scan_type(Data, C) -> fuck.
 
 check({table, Name}, C) ->
     {ok, Re} = re:compile("^[a-z_]{1,63}$"),
