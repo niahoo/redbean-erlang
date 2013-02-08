@@ -8,5 +8,4 @@
               }).
 
 -record(ebdb, { dba :: pid(),
-                dbam :: atom(),
                 m :: atom()}).

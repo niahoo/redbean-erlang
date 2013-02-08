@@ -9,9 +9,8 @@
 
 handle({store, Bean}, _From, State) ->
     %% first check if table exists and create it if not
-    AMod = State#ebdb.dbam,
     DBA = State#ebdb.dba,
-    % case AMod:table_exists(DBA, Bean:type())
+    % case eb_adapter:table_exists(DBA, Bean:type())
     %     of true -> ok
     %      ; false ->
     %         {ok, _, _} =

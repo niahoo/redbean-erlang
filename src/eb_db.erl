@@ -94,12 +94,12 @@ init([Adapter, Conf, FMode]) ->
 
     % error_logger:info_msg("Starting dba for ~p~n", [process_info(self(), registered_name)]),
 
-    {ok, Pid} = AdapterModule:start_link(Conf),
+    {ok, Pid} = eb_adapter:start_link(AdapterModule, Conf),
 
-    Module = fmode_module(FMode),
+    FModeModule = fmode_module(FMode),
     % error_logger:info_msg("Dba pid is ~p~n", [Pid]),
 
-    {ok, #ebdb{dba=Pid, dbam=AdapterModule, m=Module}}.
+    {ok, #ebdb{dba=Pid, m=FModeModule}}.
 
 %%--------------------------------------------------------------------
 %% @private
