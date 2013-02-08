@@ -3,11 +3,15 @@
 -export([behaviour_info/1]).
 -behaviour(gen_server).
 
+-export_type([dbatype/0]).
+-type dbatype() :: integer | double | binary | text.
+
 %% API
 -export([start_link/2,stop/1]).
 -export([exec/2,exec/3]).
 -export([table_exists/2,create_table/2,get_tables/1]).
--export([quote/2,check/2]).
+-export([quote/2,check/2,scan_type/2]).
+-export([column_exists/3,add_column/4,get_columns/2]).
 
 %% gen_server callbacks
 -export([init/1,
@@ -24,6 +28,7 @@
 
 -record(state, {m, dbastate}).
 
+
 behaviour_info(callbacks) ->
     [{init,1},
      {quote, 2},
@@ -31,6 +36,9 @@ behaviour_info(callbacks) ->
      {check, 2},
      {exec, 2},
      {create_table, 2},
+     {get_tables, 2},
+     {add_column, 2},
+     {get_columns, 2},
      {close, 1}
     ];
 
@@ -48,8 +56,8 @@ start_link(AdapterModule, Conf) ->
 quote(Pid, Name) ->
     gen_server:call(Pid, {quote, Name}).
 
-check(Pid, {table, Name}) ->
-    gen_server:call(Pid, {check, {table, Name}}).
+check(Pid, {Object, Name}) ->
+    gen_server:call(Pid, {check, {Object, Name}}).
 
 exec(Pid, Query) ->
     gen_server:call(Pid, {exec, Query}).
@@ -57,6 +65,7 @@ exec(Pid, Query) ->
 exec(Pid, Query, Bindings) ->
     gen_server:call(Pid, {exec, {Query, Bindings}}).
 
+%% tables ------------------------------------------------------------
 
 table_exists(Pid, Name) when is_atom(Name) ->
     table_exists(Pid, list_to_binary(atom_to_list(Name)));
@@ -76,6 +85,29 @@ create_table(Pid, Name) when is_list(Name) ->
 
 get_tables(Pid) ->
     gen_server:call(Pid, {get_tables, []}).
+
+%% types -------------------------------------------------------------
+
+scan_type(Pid, V) ->
+    gen_server:call(Pid, {scan_type, V}).
+
+%% columns -----------------------------------------------------------
+
+column_exists(Pid, Table, Name) ->
+    {ok, Columns} = get_columns(Pid,Table),
+    lists:member(Name,[Col || {Col,_Type} <- Columns]).
+
+add_column(Pid, Table, Name, Type) ->
+    case check(Pid, {column, Name})
+        of true -> gen_server:call(Pid, {add_column, {Table,Name,Type}})
+         ; false -> {error, {bad_column_name, Name}}
+    end.
+
+%% doit retourner {ok, [{ColName,Type}]}.
+get_columns(Pid, Table) ->
+    gen_server:call(Pid, {get_columns, Table}).
+
+%% stop --------------------------------------------------------------
 
 stop(Pid) ->
     gen_server:call(Pid, stop).
