@@ -11,7 +11,7 @@
 -export([exec/2,exec/3]).
 -export([table_exists/2,create_table/2,get_tables/1]).
 -export([quote/2,check/2,scan_type/2]).
--export([column_exists/3,add_column/4,get_columns/2]).
+-export([column_exists/3,add_column/4,get_columns/2,widen_column/4]).
 
 %% gen_server callbacks
 -export([init/1,
@@ -39,6 +39,7 @@ behaviour_info(callbacks) ->
      {get_tables, 2},
      {add_column, 2},
      {get_columns, 2},
+     {widen_column, 2},
      {close, 1}
     ];
 
@@ -67,20 +68,15 @@ exec(Pid, Query, Bindings) ->
 
 %% tables ------------------------------------------------------------
 
-table_exists(Pid, Name) when is_atom(Name) ->
-    table_exists(Pid, list_to_binary(atom_to_list(Name)));
-table_exists(Pid, Name) when is_binary(Name) ->
+table_exists(Pid, Table) ->
     {ok, Tables} = get_tables(Pid),
-    lists:member(Name,Tables).
+    lists:member(to_binary(Table),Tables).
 
-create_table(Pid, Name) when is_atom(Name) ->
-    create_table(Pid, atom_to_list(Name));
-create_table(Pid, Name) when is_binary(Name) ->
-    create_table(Pid, binary_to_list(Name));
-create_table(Pid, Name) when is_list(Name) ->
-    case check(Pid, {table, Name})
-        of true -> gen_server:call(Pid, {create_table, Name})
-         ; false -> {error, {bad_table_name, Name}}
+create_table(Pid, Table) ->
+    BinTable = to_binary(Table),
+    case check(Pid, {table, BinTable})
+        of true -> gen_server:call(Pid, {create_table, BinTable})
+         ; false -> {error, {bad_table_name, BinTable}}
     end.
 
 get_tables(Pid) ->
@@ -93,19 +89,32 @@ scan_type(Pid, V) ->
 
 %% columns -----------------------------------------------------------
 
-column_exists(Pid, Table, Name) ->
+column_exists(Pid, Table, Column) ->
+    BinName = to_binary(Column),
     {ok, Columns} = get_columns(Pid,Table),
-    lists:member(Name,[Col || {Col,_Type} <- Columns]).
+    lists:member(BinName, [Col || {Col,_Type} <- Columns]).
 
-add_column(Pid, Table, Name, Type) ->
-    case check(Pid, {column, Name})
-        of true -> gen_server:call(Pid, {add_column, {Table,Name,Type}})
-         ; false -> {error, {bad_column_name, Name}}
+add_column(Pid, Table, Column, Type) ->
+    TableExists = table_exists(Pid, Table),
+    ColumnExists = column_exists(Pid, Table, Column),
+    Check = check(Pid, {column, Column}),
+    if not TableExists -> {error, {no_table, Table}}
+     ; ColumnExists -> {error, {column_exists, {Table, Column}}}
+     ; not Check -> {error, {bad_column_name, Column}}
+     ; true -> gen_server:call(Pid, {add_column, {Table,Column,Type}})
     end.
 
 %% doit retourner {ok, [{ColName,Type}]}.
 get_columns(Pid, Table) ->
     gen_server:call(Pid, {get_columns, Table}).
+
+widen_column(Pid, Table, Column, NewType) ->
+    TableExists = table_exists(Pid, Table),
+    ColumnExists = column_exists(Pid, Table, Column),
+    if not TableExists -> {error, {no_table, Table}}
+     ; not ColumnExists -> {error, {no_column, {Table, Column}}}
+     ; true -> gen_server:call(Pid, {widen_column, {Table, Column, NewType}})
+    end.
 
 %% stop --------------------------------------------------------------
 
@@ -177,3 +186,7 @@ code_change(_OldVsn, State, _Extra) ->
 %%% Internal functions
 %%%===================================================================
 
+%% tranforme les lists ou atoms en binary
+to_binary(V) when is_atom(V) -> to_binary(atom_to_list(V)) ;
+to_binary(V) when is_list(V) -> list_to_binary(V) ;
+to_binary(V) when is_binary(V) -> V.

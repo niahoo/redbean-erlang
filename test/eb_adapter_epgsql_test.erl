@@ -49,6 +49,13 @@ queries_test_() ->
                 ok,
                 eb_adapter:create_table(Pid, "t_test_create_list")
               ),
+              %% WRONG TABLE NAMES
+              ?_assertMatch({error, {bad_table_name, _}}, eb_adapter:create_table(Pid, "contains\"quote")),
+              ?_assertMatch({error, {bad_table_name, _}}, eb_adapter:create_table(Pid, "contains-tr")),
+              ?_assertMatch({error, {bad_table_name, _}}, eb_adapter:create_table(Pid, "contains$doll")),
+              ?_assertMatch({error, {bad_table_name, _}}, eb_adapter:create_table(Pid, "contains.dot")),
+              ?_assertMatch({error, {bad_table_name, _}}, eb_adapter:create_table(Pid, "héhéhéfrench")),
+              ?_assertMatch({error, {bad_table_name, _}}, eb_adapter:create_table(Pid, "noUPPERCASEallowed")),
               ?_assertMatch(
                 {ok, _Columns, [{<<"t_test_create_binary">>},{<<"t_test_create_atom">>},{<<"t_test_create_list">>}]},
                 q(Pid, "select table_name from information_schema.tables where table_schema = 'public';")
@@ -82,7 +89,7 @@ queries_test_() ->
         },
         {"Adapter should be able to alter a table and create columns\n"
          "  or change their type",
-          setup, local,
+          setup, spawn,
           fun () ->
             Pid = startapp()
             , {ok, [], []} = q(Pid, "create table t_test_alter ();"),
@@ -98,6 +105,7 @@ queries_test_() ->
                 {ok, _Columns, []},
                 q(Pid, "select column_name, data_type from information_schema.columns where table_name='t_test_alter'")
               ),
+              %% ADD COLUMN
               ?_assertMatch(false, eb_adapter:column_exists(Pid, "t_test_alter", "eterm")),
               ?_assertMatch(ok, eb_adapter:add_column(Pid, "t_test_alter", "eterm", binary)),
               ?_assertMatch(ok, eb_adapter:add_column(Pid, "t_test_alter", "id", integer)),
@@ -106,10 +114,29 @@ queries_test_() ->
                 {ok, [{<<"eterm">>,binary},{<<"id">>, integer}]},
                 eb_adapter:get_columns(Pid, "t_test_alter")
               ),
+              %% ADD COLUMN WRONG COLUMN NAMES
+              ?_assertMatch({error, {bad_column_name, _}}, eb_adapter:add_column(Pid, "t_test_alter", "contains\"quote", integer)),
+              ?_assertMatch({error, {bad_column_name, _}}, eb_adapter:add_column(Pid, "t_test_alter", "contains-tr", integer)),
+              ?_assertMatch({error, {bad_column_name, _}}, eb_adapter:add_column(Pid, "t_test_alter", "contains$doll", integer)),
+              ?_assertMatch({error, {bad_column_name, _}}, eb_adapter:add_column(Pid, "t_test_alter", "contains.dot", integer)),
+              ?_assertMatch({error, {bad_column_name, _}}, eb_adapter:add_column(Pid, "t_test_alter", "héhéhéfrench", integer)),
+              ?_assertMatch({error, {bad_column_name, _}}, eb_adapter:add_column(Pid, "t_test_alter", "noUPPERCASEallowed", integer)),
+              %% ADD COLUMN NON EXISTENT TABLE
+              ?_assertMatch({error, {no_table, _}}, eb_adapter:add_column(Pid, "nonexistenttable", "good_name", integer)),
+              %% WIDEN COLUMN
+              ?_assertMatch(ok, eb_adapter:widen_column(Pid, "t_test_alter", "eterm", text)),
+              %% WIDEN CHECK
               ?_assertMatch(
-                {ok, _Columns, []},
-                eb_adapter:widen_column(Pid, "t_test_alter", "eterm", text)
+                {ok, [{<<"eterm">>,text},{<<"id">>, integer}]},
+                eb_adapter:get_columns(Pid, "t_test_alter")
               ),
+              %% WIDEN COLUMN NON EXISTENT TABLE
+              ?_assertMatch({error, {no_table, _}}, eb_adapter:widen_column(Pid, "nonexistenttable", "good_name", integer)),
+              %% WIDEN COLUMN NON EXISTENT COLUMN
+              ?_assertMatch({error, {no_column, _}}, eb_adapter:widen_column(Pid, "t_test_alter", "idontexist", integer)),
+              %% WIDEN COLUMN BAD COLUMN NAME -- COULD NOT HAVE BEEN CREATED => no_column
+              ?_assertMatch({error, {no_column, _}}, eb_adapter:widen_column(Pid, "t_test_alter", "noUPPERCASEallowed", integer)),
+              %% CHECK COLUMNS
               ?_assertMatch(
                 {ok, _Columns, [{<<"eterm">>,<<"text">>},{<<"id">>, <<"integer">>}]},
                 q(Pid, "select column_name, data_type from information_schema.columns where table_name='t_test_alter'")

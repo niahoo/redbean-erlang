@@ -14,6 +14,7 @@
          create_table/2,
          get_columns/2,
          add_column/2,
+         widen_column/2,
          close/1
         ]).
 
@@ -74,8 +75,8 @@ check({column, Name}, C) ->
     end,
     {reply, Reply, C}.
 
-create_table(Name, C) ->
-    Reply = case q(C, ["create table ", Name, " (id SERIAL PRIMARY KEY);"])
+create_table(Table, C) ->
+    Reply = case q(C, ["create table ", Table, " (id SERIAL PRIMARY KEY);"])
         of {ok, _Columns, []} -> ok
          ; Any -> Any
     end,
@@ -85,7 +86,7 @@ get_tables(_, C) ->
     {ok, _Columns, Tables} = q(C,
         "select table_name from information_schema.tables
         where table_schema = 'public'"),
-    {reply, [T || {T} <- Tables], C}.
+    {reply, {ok, [T || {T} <- Tables]}, C}.
 
 
 get_columns(Table, C) ->
@@ -96,10 +97,24 @@ get_columns(Table, C) ->
     {reply, {ok, TablesTypesStandard}, C}.
 
 
-add_column({Table,Name,Type}, C) ->
+add_column({Table, Column, Type}, C) ->
     PgType = dba2pgtype(Type),
-    {ok, [], []} = q(C, ["alter table ", Table, " add ", Name," ", PgType]),
-    {reply, ok, C}.
+    Reply = case q(C, ["alter table ", Table, " add ", Column," ", PgType])
+        of {ok, [], []} -> ok
+         %% input data must be ok
+         %% ; {error, #error{code = <<"42P01">>}} -> {error, {no_table, Table}}
+    end,
+    {reply, Reply, C}.
+
+widen_column({Table, Column, NewType}, C) ->
+    PgType = dba2pgtype(NewType),
+    Reply = case q(C, ["alter table ", Table, " alter column ", Column," TYPE ", PgType])
+        of {ok, [], []} -> ok
+         %% input data must be ok
+         %% ; {error, #error{code = <<"42P01">>}} -> {error, {no_table, Table}}
+         %% ; {error, #error{code = <<"42703">>}} -> {error, {no_column, {Table, Column}}}
+    end,
+    {reply, Reply, C}.
 
 scan_type(V, C) -> {reply, scan_type(V), C}.
 
@@ -112,10 +127,12 @@ scan_type (V) -> throw({error, {unhandled_value, V}}).
 
 -spec pg2dbatype(binary()) -> eb_adapter:dbatype().
 pg2dbatype(<<"integer">>) -> integer;
+pg2dbatype(<<"text">>) -> text;
 pg2dbatype(<<"bytea">>) -> binary.
 
 -spec dba2pgtype(eb_adapter:dbatype()) -> binary().
 dba2pgtype(integer) -> <<"integer">>;
+dba2pgtype(text) -> <<"text">>;
 dba2pgtype(binary) -> <<"bytea">>.
 
 

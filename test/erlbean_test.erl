@@ -1,6 +1,7 @@
 -module(erlbean_test).
--include_lib("eunit/include/eunit.hrl").
+
 -include_lib("erlbean/include/erlbean.hrl").
+-include_lib("eunit/include/eunit.hrl").
 
 
 erlbean_start_test_() ->
