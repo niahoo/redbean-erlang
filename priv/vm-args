@@ -16,4 +16,3 @@
 -pa ./deps/epgsql/ebin
 -pa ./deps/gen_leader/ebin
 -pa ./deps/gproc/ebin
--pa ./ebin
