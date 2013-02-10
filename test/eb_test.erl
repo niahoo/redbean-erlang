@@ -4,21 +4,14 @@
 -include_lib("erlbean/include/testcfg.hrl").
 
 
-
-
 %% @todo les toolkits devraient s'enregistrer, et avant de récup un
 %% toolkit on devrait s'assurer qu'il soit lancé
-get_toolkit_test_() ->
-    {"Facade should get the default toolkit name",
+get_eb_db_test_() ->
+    {"Facade should get the default eb_db name",
      setup, local, fun startapp/0, fun stopapp/1,
-     [?_assertEqual(eb:get_toolkit(), default_toolkit)]
+     [?_assertEqual(eb:get_eb_db(), default_eb_db)]
     }.
 
-get_toolkit_test_() ->
-    {"Facade should get the default toolkit",
-     setup, local, fun startapp/0, fun stopapp/1,
-     [?_assertEqual(eb:get_toolkit(), default_toolkit)]
-    }.
 
 startapp() ->
     ok = application:start(erlbean),

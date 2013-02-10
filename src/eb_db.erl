@@ -9,7 +9,7 @@
 
 
 %% Global API
--export([get_toolkit/0]).
+-export([get_eb_db/0]).
 
 %% API
 -export([start_link/4]).
@@ -32,17 +32,17 @@
 %% ===================================================================
 
 %% catch une exception enregistré on  renvoie le toolkit par defaut :
-%% default_toolkit. Pour éviter une exception les fois suivantes, on
+%% default_eb_db. Pour éviter une exception les fois suivantes, on
 %% l'enregistre dans gproc
-get_toolkit() ->
+get_eb_db() ->
     try
-        gproc:get_value({n,l,eb_toolkit})
+        gproc:get_value({n,l,eb_db})
     catch
         error:badarg ->
-            gproc:reg({n,l,eb_toolkit}, default_toolkit),
-            get_toolkit()
+            gproc:reg({n,l,eb_db}, default_eb_db),
+            get_eb_db()
     end.
-tk() -> get_toolkit().
+tk() -> get_eb_db().
 
 %% ===================================================================
 %% API
@@ -52,11 +52,9 @@ start_link(Adapter, Name, Conf, FMode) ->
     % error_logger:info_msg("Starting eb_db for ~p~n", [Name]),
     {ok, _Pid} = gen_server:start_link({local, Name}, ?MODULE, [Adapter, Conf, FMode], []).
 
-get_adapter(Toolkit) ->
-    gen_server:call(Toolkit,get_adapter).
+get_adapter(Pid) ->
+    gen_server:call(Pid,get_adapter).
 
-
-%% regarde dans gproc le toolkit enregistré. Si pas de toolkit on
 
 
 store({eb_bean, #bean{tainted=false}}=Wrapper) ->

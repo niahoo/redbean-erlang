@@ -9,8 +9,8 @@
 
 t() ->
     catch db1(),
-    eb_adapter_epgsql:exec(eb:get_toolkit(), "select 3 + 5").
+    eb_adapter_epgsql:exec(eb:get_eb_db(), "select 3 + 5").
 
 db1() -> eb:setup(epgsql,?TESTCONF).
-db2() -> eb:setup(epgsql,other_toolkit, ?TESTCONF).
+db2() -> eb:setup(epgsql,other_eb_db, ?TESTCONF).
 
