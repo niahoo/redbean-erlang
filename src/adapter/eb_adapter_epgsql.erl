@@ -15,6 +15,7 @@
          get_columns/2,
          add_column/2,
          widen_column/2,
+         update_record/2,
          close/1
         ]).
 
@@ -58,6 +59,10 @@ quote(Name, C) ->
 %% Quote un paramètre
 pquote(Name) ->
     [$', Name, $'].
+
+%% ===================================================================
+%% SCHEMA MODIFICATIONS
+%% ===================================================================
 
 check({table, Name}, C) ->
     {ok, Re} = re:compile("^[a-z_]{1,63}$"),
@@ -134,6 +139,36 @@ pg2dbatype(<<"bytea">>) -> binary.
 dba2pgtype(integer) -> <<"integer">>;
 dba2pgtype(text) -> <<"text">>;
 dba2pgtype(binary) -> <<"bytea">>.
+
+%% ===================================================================
+%% RECORDS INSERT/UPDATE
+%% ===================================================================
+
+update_record({Table, KeyVals, undefined=_ID}, C) ->
+    insert_record(Table, KeyVals, C);
+
+update_record({Table, KeyVals, ID}, C) ->
+    {reply, {ok, kikoolol}, C}.
+
+insert_record(Table, KeyVals, C) ->
+    Keys = [atom_to_list(K) || {K,_V} <- KeyVals],
+    Vals = [V || V <- KeyVals],
+    Columns = string:join(Keys,","),
+
+    %% Quand on génère les marqueurs, ils sont en ordre décroissant,
+    %% c'est pourquoi il faut renverser la liste des valeurs
+
+    {_, Markers} = lists:foldl(
+        fun(_V,{X, Dolls}) -> %% returns ["$n", ... "$2", "$1"]
+            {X+1, [", $", integer_to_list(X+1)|Dolls]}
+        end, {0,[]},Vals),
+
+    Q = ["insert into ", Table, " (id " , Columns, " ) VALUES "
+         "( DEFAULT ", Markers, " ) returning id"],
+    {ok, _, _, [{ID}]} = q(C,Q, lists:reverse(Vals)),
+    {reply, {ok, ID}, C}.
+
+
 
 
 %%%===================================================================

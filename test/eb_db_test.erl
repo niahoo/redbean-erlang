@@ -58,21 +58,40 @@ internals_test_() ->
                     ]}
                 end
             }
+        },
+        {"If a bean is tainted, :store() should make it not tainted",
+            {
+                setup, local,
+                fun startapp/0,
+                fun stopapp/1,
+                fun (started) ->
+                    Bean = eb:dispense(bean),
+                    {ok, Bean2} = eb_db:store(Bean),
+                    {inorder, [
+                        ?_assertNot(Bean2:tainted()),
+                        ?_assertMatch({ok, [], []},eb_adapter:exec(dba(),"drop table bean"))
+                    ]}
+                end
+            }
         }
-        % {"If a bean is tainted, :store() should make it not tainted",
-        %     {
-        %         setup, local,
-        %         fun startapp/0,
-        %         fun stopapp/1,
-        %         fun (started) ->
-        %             Bean = eb:dispense(bean),
-        %             {ok, Bean2} = eb_db:store(Bean),
-        %             {inorder, [
-        %                 ?_assertNot(Bean2:tainted())
-        %             ]}
-        %         end
-        %     }
-        % }
+        ,
+        {"A new bean should have a value undefined, store it should\n"
+         "populate the id whit an integer",
+            {
+                setup, local,
+                fun startapp/0,
+                fun stopapp/1,
+                fun (started) ->
+                    Bean = eb:dispense(bean),
+                    {ok, Bean2} = eb_db:store(Bean),
+                    {inorder, [
+                        ?_assertMatch({ok, undefined}, Bean:get(id)),
+                        ?_assertMatch({ok, ID} when is_integer(ID), Bean2:get(id)),
+                        ?_assertMatch({ok, [], []},eb_adapter:exec(dba(),"drop table bean"))
+                    ]}
+                end
+            }
+        }
     ].
 
 

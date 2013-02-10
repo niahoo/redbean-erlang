@@ -57,8 +57,8 @@ queries_test_() ->
               ?_assertMatch({error, {bad_table_name, _}}, eb_adapter:create_table(Pid, "héhéhéfrench")),
               ?_assertMatch({error, {bad_table_name, _}}, eb_adapter:create_table(Pid, "noUPPERCASEallowed")),
               ?_assertMatch(
-                {ok, _Columns, [{<<"t_test_create_binary">>},{<<"t_test_create_atom">>},{<<"t_test_create_list">>}]},
-                q(Pid, "select table_name from information_schema.tables where table_schema = 'public';")
+                {ok, _Columns, [{<<"t_test_create_atom">>},{<<"t_test_create_binary">>},{<<"t_test_create_list">>}]},
+                q(Pid, "select table_name from information_schema.tables where table_schema = 'public' order by table_name;")
               ),
               % ?_assertMatch( %% WRONG TABLE NAME
               %   {error, {bad_table_name, Name}},

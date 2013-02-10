@@ -3,7 +3,7 @@
 
 
 -record(bean, {type :: atom(),
-               props=?DICT:new(),
+               props,
                tainted=true :: boolean()
               }).
 

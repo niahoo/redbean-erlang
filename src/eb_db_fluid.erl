@@ -17,7 +17,9 @@ handle({store, Bean}, _From, State) ->
          ; false ->
             ok = eb_adapter:create_table(DBA, Type)
     end,
-    {reply, {ok, Bean}, State};
+    {ok, ID} = eb_adapter:update_record(DBA, atom_to_list(Bean:type()), Bean:'export/id'(), Bean:id()),
+    {ok, PostUpdateBean} = Bean:set(id,ID),
+    {reply, {ok, PostUpdateBean:untaint()}, State};
 
 handle(_Request, _From, State) ->
     Reply = {?MODULE, unknown_request},

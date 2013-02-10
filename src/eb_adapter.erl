@@ -11,6 +11,7 @@
 -export([exec/2,exec/3]).
 -export([table_exists/2,create_table/2,get_tables/1]).
 -export([quote/2,check/2,scan_type/2]).
+-export([update_record/4]).
 -export([column_exists/3,add_column/4,get_columns/2,widen_column/4]).
 
 %% gen_server callbacks
@@ -30,17 +31,19 @@
 
 
 behaviour_info(callbacks) ->
-    [{init,1},
-     {quote, 2},
-     {scan_type, 2},
-     {check, 2},
-     {exec, 2},
+    [
+     {init,1}, %% initialization of adapter state
+     {quote, 2}, %% quote table and column names
+     {scan_type, 2}, %% check a value and define the :: eb_adapter:dbatype() that must be used
+     {check, 2}, %% check validity of a table/column name
+     {exec, 2}, %% execute a query and eventually return values
      {create_table, 2},
      {get_tables, 2},
      {add_column, 2},
      {get_columns, 2},
      {widen_column, 2},
-     {close, 1}
+     {update_record, 2},
+     {close, 1} %% close the connexion
     ];
 
 behaviour_info(_Other) ->
@@ -60,11 +63,6 @@ quote(Pid, Name) ->
 check(Pid, {Object, Name}) ->
     gen_server:call(Pid, {check, {Object, Name}}).
 
-exec(Pid, Query) ->
-    gen_server:call(Pid, {exec, Query}).
-
-exec(Pid, Query, Bindings) ->
-    gen_server:call(Pid, {exec, {Query, Bindings}}).
 
 %% tables ------------------------------------------------------------
 
@@ -115,6 +113,17 @@ widen_column(Pid, Table, Column, NewType) ->
      ; not ColumnExists -> {error, {no_column, {Table, Column}}}
      ; true -> gen_server:call(Pid, {widen_column, {Table, Column, NewType}})
     end.
+
+%% queries -----------------------------------------------------------
+
+exec(Pid, Query) ->
+    gen_server:call(Pid, {exec, Query}).
+
+exec(Pid, Query, Bindings) ->
+    gen_server:call(Pid, {exec, {Query, Bindings}}).
+
+update_record(Pid, Table, KeyVals, ID) ->
+    gen_server:call(Pid, {update_record, {Table, KeyVals, ID}}).
 
 %% stop --------------------------------------------------------------
 
