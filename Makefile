@@ -36,3 +36,6 @@ vm-args:
 		echo '-pa' $$i >> priv/vm-args; \
 	done
 
+
+doc:
+	@(rebar skip_deps=true doc)
