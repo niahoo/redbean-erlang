@@ -25,13 +25,16 @@ queries_test_() ->
             ?_assertMatch( {ok, _Columns, [{8}]}, eb_adapter:exec(Pid, "SELECT $1::integer + 5;", [3]))
           end
         },
-        {"Adapter should be able to create a table with atom, list and binary",
+        {"Adapter should be able to create a table with atoms only, list and binary",
           setup, local, fun startapp/0, fun stopapp/1,
           fun(Pid) ->
+            q(Pid, "drop table IF EXISTS t_test_create_binary ;"),
             q(Pid, "drop table IF EXISTS t_test_create_binary ;"),
             q(Pid, "drop table IF EXISTS t_test_create_atom ;"),
             q(Pid, "drop table IF EXISTS t_test_create_list ;"),
             q(Pid, "drop table IF EXISTS t_test_alter ;"),
+            q(Pid, "drop table IF EXISTS mytype ;"),
+            q(Pid, "drop table IF EXISTS bean ;"),
             {inorder ,[
               ?_assertMatch(
                 {ok, _Columns, []},
@@ -47,17 +50,18 @@ queries_test_() ->
               ),
               ?_assertMatch(
                 ok,
-                eb_adapter:create_table(Pid, "t_test_create_list")
+                eb_adapter:create_table(Pid, "t_test_create_list_numbers_123")
               ),
               %% WRONG TABLE NAMES
-              ?_assertMatch({error, {bad_table_name, _}}, eb_adapter:create_table(Pid, "contains\"quote")),
-              ?_assertMatch({error, {bad_table_name, _}}, eb_adapter:create_table(Pid, "contains-tr")),
-              ?_assertMatch({error, {bad_table_name, _}}, eb_adapter:create_table(Pid, "contains$doll")),
-              ?_assertMatch({error, {bad_table_name, _}}, eb_adapter:create_table(Pid, "contains.dot")),
-              ?_assertMatch({error, {bad_table_name, _}}, eb_adapter:create_table(Pid, "héhéhéfrench")),
-              ?_assertMatch({error, {bad_table_name, _}}, eb_adapter:create_table(Pid, "noUPPERCASEallowed")),
+              ?_assertMatch({error, {bad_table_name, _}}, eb_adapter:create_table(Pid, 'contains\"quote')),
+              ?_assertMatch({error, {bad_table_name, _}}, eb_adapter:create_table(Pid, 'contains-tr')),
+              ?_assertMatch({error, {bad_table_name, _}}, eb_adapter:create_table(Pid, '1numberfirstpos')),
+              ?_assertMatch({error, {bad_table_name, _}}, eb_adapter:create_table(Pid, 'contains$doll')),
+              ?_assertMatch({error, {bad_table_name, _}}, eb_adapter:create_table(Pid, 'contains.dot')),
+              ?_assertMatch({error, {bad_table_name, _}}, eb_adapter:create_table(Pid, 'héhéhéfrench')),
+              ?_assertMatch({error, {bad_table_name, _}}, eb_adapter:create_table(Pid, 'noUPPERCASEallowed')),
               ?_assertMatch(
-                {ok, _Columns, [{<<"t_test_create_atom">>},{<<"t_test_create_binary">>},{<<"t_test_create_list">>}]},
+                {ok, _Columns, [{<<"t_test_create_atom">>},{<<"t_test_create_binary">>},{<<"t_test_create_list_numbers_123">>}]},
                 q(Pid, "select table_name from information_schema.tables where table_schema = 'public' order by table_name;")
               ),
               % ?_assertMatch( %% WRONG TABLE NAME
@@ -66,7 +70,7 @@ queries_test_() ->
               % ),
               ?_assertMatch(?PG_EMPTY_RET, q(Pid, "drop table t_test_create_binary;")),
               ?_assertMatch(?PG_EMPTY_RET, q(Pid, "drop table t_test_create_atom;")),
-              ?_assertMatch(?PG_EMPTY_RET, q(Pid, "drop table t_test_create_list;"))
+              ?_assertMatch(?PG_EMPTY_RET, q(Pid, "drop table t_test_create_list_numbers_123;"))
             ]}
           end
         },
@@ -106,12 +110,12 @@ queries_test_() ->
                 q(Pid, "select column_name, data_type from information_schema.columns where table_name='t_test_alter'")
               ),
               %% ADD COLUMN
-              ?_assertMatch(false, eb_adapter:column_exists(Pid, "t_test_alter", "eterm")),
-              ?_assertMatch(ok, eb_adapter:add_column(Pid, "t_test_alter", "eterm", binary)),
+              ?_assertMatch(false, eb_adapter:column_exists(Pid, "t_test_alter", "eterm123")),
+              ?_assertMatch(ok, eb_adapter:add_column(Pid, "t_test_alter", "eterm123", binary)),
               ?_assertMatch(ok, eb_adapter:add_column(Pid, "t_test_alter", "id", integer)),
-              ?_assertMatch(true, eb_adapter:column_exists(Pid, "t_test_alter", "eterm")),
+              ?_assertMatch(true, eb_adapter:column_exists(Pid, "t_test_alter", "eterm123")),
               ?_assertMatch(
-                {ok, [{<<"eterm">>,binary},{<<"id">>, integer}]},
+                {ok, [{<<"eterm123">>,binary},{<<"id">>, integer}]},
                 eb_adapter:get_columns(Pid, "t_test_alter")
               ),
               %% ADD COLUMN WRONG COLUMN NAMES
@@ -119,15 +123,16 @@ queries_test_() ->
               ?_assertMatch({error, {bad_column_name, _}}, eb_adapter:add_column(Pid, "t_test_alter", "contains-tr", integer)),
               ?_assertMatch({error, {bad_column_name, _}}, eb_adapter:add_column(Pid, "t_test_alter", "contains$doll", integer)),
               ?_assertMatch({error, {bad_column_name, _}}, eb_adapter:add_column(Pid, "t_test_alter", "contains.dot", integer)),
+              ?_assertMatch({error, {bad_column_name, _}}, eb_adapter:add_column(Pid, "t_test_alter", "1numberfirstpos", integer)),
               ?_assertMatch({error, {bad_column_name, _}}, eb_adapter:add_column(Pid, "t_test_alter", "héhéhéfrench", integer)),
               ?_assertMatch({error, {bad_column_name, _}}, eb_adapter:add_column(Pid, "t_test_alter", "noUPPERCASEallowed", integer)),
               %% ADD COLUMN NON EXISTENT TABLE
               ?_assertMatch({error, {no_table, _}}, eb_adapter:add_column(Pid, "nonexistenttable", "good_name", integer)),
               %% WIDEN COLUMN
-              ?_assertMatch(ok, eb_adapter:widen_column(Pid, "t_test_alter", "eterm", text)),
+              ?_assertMatch(ok, eb_adapter:widen_column(Pid, "t_test_alter", "eterm123", text)),
               %% WIDEN CHECK
               ?_assertMatch(
-                {ok, [{<<"eterm">>,text},{<<"id">>, integer}]},
+                {ok, [{<<"eterm123">>,text},{<<"id">>, integer}]},
                 eb_adapter:get_columns(Pid, "t_test_alter")
               ),
               %% WIDEN COLUMN NON EXISTENT TABLE
@@ -138,16 +143,33 @@ queries_test_() ->
               ?_assertMatch({error, {no_column, _}}, eb_adapter:widen_column(Pid, "t_test_alter", "noUPPERCASEallowed", integer)),
               %% CHECK COLUMNS
               ?_assertMatch(
-                {ok, _Columns, [{<<"eterm">>,<<"text">>},{<<"id">>, <<"integer">>}]},
+                {ok, _Columns, [{<<"eterm123">>,<<"text">>},{<<"id">>, <<"integer">>}]},
                 q(Pid, "select column_name, data_type from information_schema.columns where table_name='t_test_alter'")
-              ),
-              ?_assertMatch(?PG_EMPTY_RET, q(Pid, "drop table t_test_alter;"))
+              )
+              % , ?_assertMatch(?PG_EMPTY_RET, q(Pid, "drop table t_test_alter;"))
             ]}
+          end
+        },
+        {"Adapter should be able to INSERT values",
+          setup, local, fun startapp/0, fun stopapp/1,
+          fun(Pid) ->
+              q(Pid,"create table if not exists testint (id serial primary key, col_1 text, col_2 text)"),
+            [
+              ?_assertMatch(
+                {ok,1},
+                eb_adapter:exec(Pid,
+                  "Insert into testint (id, col_1, col_2) values (DEFAULT, $1, $2)",
+                  [123, "yo man"]
+                )
+              ),
+              ?_assertMatch({ok,[],[]}, q(Pid, "drop table testint"))
+            ]
           end
         }
     ]}.
 
 q(Pid, Query) -> eb_adapter:exec(Pid, Query).
+q(Pid, Query, Bindings) -> eb_adapter:exec(Pid, Query, Bindings).
 
 
 startapp() ->

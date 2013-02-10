@@ -91,18 +91,37 @@ internals_test_() ->
                     ]}
                 end
             }
-        }
-        ,
+        },
         {"Create a bean should create columns",
             {
                 setup, local,
                 fun startapp/0,
                 fun stopapp/1,
                 fun (started) ->
-                    Bean = (eb:dispense(mytype)):set([{col_1, "val 1"}, {col_2, "val II"}]),
+                    {ok, Bean} = (eb:dispense(mytype)):set([{col_1, 123}, {col_2, "val II"}]),
                     {ok, _Bean2} = eb:store(Bean),
+                    {ok,Cols} = eb_adapter:get_columns(dba(),mytype),
                     {inorder, [
-                        ?_assertMatch({ok, [], []},eb_adapter:get_columns(dba(),[<<"col_1">>,<<"col_2">>]))
+                        ?_assertMatch([{<<"col_1">>,integer},{<<"col_2">>,text},{<<"id">>,integer}],lists:sort(Cols))
+                    ]}
+                end
+            }
+        }
+        ,
+        {"Update a bean and change type should change column type",
+            {
+                setup, local,
+                fun startapp/0,
+                fun stopapp/1,
+                fun (started) ->
+                    {ok, Bean} = (eb:dispense(mytype)):set(
+                        [{col_1, "this is text"}, %% text in an integer column
+                        {col_2, 321}              %% integer in a text column
+                    ]),
+                    {ok, _Bean2} = eb:store(Bean),
+                    {ok, Cols} = eb_adapter:get_columns(dba(),mytype),
+                    {inorder, [
+                        ?_assertMatch([{<<"col_1">>,text},{<<"col_2">>,text},{<<"id">>,integer}],lists:sort(Cols))
                     ]}
                 end
             }

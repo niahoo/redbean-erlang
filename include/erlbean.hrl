@@ -9,3 +9,6 @@
 
 -record(ebdb, { dba :: pid(),
                 m :: atom()}).
+
+
+-define(DBGTYPE(Var), error_logger:info_msg("DEBUG: ~p:~p - ~p ~p()~n~n ~p ~n~n", [?MODULE, ?LINE, ??Var,eb_utils:typeof(Var), Var])).

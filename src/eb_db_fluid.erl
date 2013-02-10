@@ -27,7 +27,7 @@ handle({store, Bean}, _From, State) ->
                adapt_column(DBA, BeanType, Key, Val)
         end, ok),
 
-    {ok, ID} = eb_adapter:update_record(DBA, atom_to_list(BeanType), Bean:'export/id'(), Bean:id()),
+    {ok, ID} = eb_adapter:update_record(DBA, to_binary(BeanType), Bean:'export/id'(), Bean:id()),
     {ok, PostUpdateBean} = Bean:set(id,ID),
     {reply, {ok, PostUpdateBean:untaint()}, State};
 
@@ -44,15 +44,25 @@ handle(_Request, _From, State) ->
 %% Adapt columns : create column if not exists or widen type
 adapt_column(DBA, BeanType, Key, Val) ->
     ValType = eb_adapter:scan_type(DBA, Val),
+    ColToList = atom_to_list(Key),
     case eb_adapter:column_exists(DBA, BeanType, Key)
         of false ->
-            ok = eb_adapter:add_column(DBA, BeanType, Key, ValType)
+            NewColumn = Key,
+            % ?DBGTYPE(NewColumn),
+            ok = eb_adapter:add_column(DBA, BeanType, ColToList, ValType)
          ; true  -> %% columns exists, check if we must widen
             CurrentColType = eb_adapter:get_type(DBA, BeanType, Key),
-            case eb_adapter:accept_type(DBA, BeanType, Key, Val)
+            Candidate = eb_adapter:scan_type(DBA, Val),
+            % ?DBGTYPE(Key),
+            case eb_adapter:accept_type(DBA, CurrentColType, Candidate)
                 of true ->
                     ok
-                 ; false ->
-                    ok = eb_adapter:widen_column(DBA, BeanType, Key, ValType)
+                 ; {false, NewType} ->
+                    % ?DBGTYPE(NewType),
+                    % ?DBGTYPE(CurrentColType),
+                    % ?DBGTYPE(Candidate),
+                    ok = eb_adapter:widen_column(DBA, BeanType, Key, NewType)
             end
     end.
+
+to_binary(X) -> eb_utils:to_binary(X).

@@ -1,5 +1,8 @@
 -module(eb_adapter).
 
+
+-include_lib("erlbean/include/erlbean.hrl").
+
 -export([behaviour_info/1]).
 -behaviour(gen_server).
 
@@ -12,7 +15,7 @@
 -export([table_exists/2,create_table/2,get_tables/1]).
 -export([quote/2,check/2,scan_type/2]).
 -export([update_record/4]).
--export([column_exists/3,add_column/4,get_columns/2,widen_column/4]).
+-export([column_exists/3,add_column/4,get_columns/2,widen_column/4,get_type/3,accept_type/3]).
 
 %% gen_server callbacks
 -export([init/1,
@@ -42,6 +45,7 @@ behaviour_info(callbacks) ->
      {add_column, 2},
      {get_columns, 2},
      {widen_column, 2},
+     {accept_type, 2},
      {update_record, 2},
      {close, 1} %% close the connexion
     ];
@@ -85,34 +89,58 @@ get_tables(Pid) ->
 scan_type(Pid, V) ->
     gen_server:call(Pid, {scan_type, V}).
 
-%% columns -----------------------------------------------------------
+%% columns/types------------------------------------------------------
 
 column_exists(Pid, Table, Column) ->
     BinName = to_binary(Column),
-    {ok, Columns} = get_columns(Pid,Table),
+    {ok, Columns} = get_columns(Pid, to_binary(Table)),
     lists:member(BinName, [Col || {Col,_Type} <- Columns]).
 
 add_column(Pid, Table, Column, Type) ->
-    TableExists = table_exists(Pid, Table),
-    ColumnExists = column_exists(Pid, Table, Column),
-    Check = check(Pid, {column, Column}),
-    if not TableExists -> {error, {no_table, Table}}
-     ; ColumnExists -> {error, {column_exists, {Table, Column}}}
-     ; not Check -> {error, {bad_column_name, Column}}
-     ; true -> gen_server:call(Pid, {add_column, {Table,Column,Type}})
+    BinTable = to_binary(Table),
+    BinColumn = to_binary(Column),
+    TableExists = table_exists(Pid, BinTable),
+    ColumnExists = column_exists(Pid, BinTable, BinColumn),
+    Check = check(Pid, {column, BinColumn}),
+    if not TableExists -> {error, {no_table, BinTable}}
+     ; ColumnExists -> {error, {column_exists, {BinTable, BinColumn}}}
+     ; not Check -> {error, {bad_column_name, BinColumn}}
+     ; true -> gen_server:call(Pid, {add_column, {BinTable,BinColumn,Type}})
     end.
 
 %% doit retourner {ok, [{ColName,Type}]}.
 get_columns(Pid, Table) ->
-    gen_server:call(Pid, {get_columns, Table}).
+    gen_server:call(Pid, {get_columns, to_binary(Table)}).
 
 widen_column(Pid, Table, Column, NewType) ->
-    TableExists = table_exists(Pid, Table),
-    ColumnExists = column_exists(Pid, Table, Column),
-    if not TableExists -> {error, {no_table, Table}}
-     ; not ColumnExists -> {error, {no_column, {Table, Column}}}
-     ; true -> gen_server:call(Pid, {widen_column, {Table, Column, NewType}})
+    BinTable = to_binary(Table),
+    BinColumn = to_binary(Column),
+    TableExists = table_exists(Pid, BinTable),
+    ColumnExists = column_exists(Pid, BinTable, BinColumn),
+    if not TableExists -> {error, {no_table, BinTable}}
+     ; not ColumnExists -> {error, {no_column, {BinTable, BinColumn}}}
+     ; true -> gen_server:call(Pid, {widen_column, {BinTable, BinColumn, NewType}})
     end.
+
+get_type(Pid, Table, Column) ->
+    BinColumn = to_binary(Column),
+    {ok, Columns} = get_columns(Pid, to_binary(Table)),
+    case proplists:lookup(BinColumn, Columns)
+        of {BinColumn, Type} -> Type
+         ; none -> {error, {no_column, Column}}
+    end.
+
+%% @doc ask the adapter if the column type CurrentColType accepts
+%% values of the type Candidate.
+%% The adapter function must return 'true' or {false, NewType}
+%% NewType must accept the value
+accept_type(Pid, X, X) ->
+
+                    % ?DBGTYPE(X),
+    true; %% if types are the same, always accept
+accept_type(Pid, CurrentColType, Candidate) ->
+                    % ?DBGTYPE({CurrentColType, Candidate}),
+    gen_server:call(Pid, {accept_type, {CurrentColType, Candidate}}).
 
 %% queries -----------------------------------------------------------
 
@@ -196,6 +224,4 @@ code_change(_OldVsn, State, _Extra) ->
 %%%===================================================================
 
 %% tranforme les lists ou atoms en binary
-to_binary(V) when is_atom(V) -> to_binary(atom_to_list(V)) ;
-to_binary(V) when is_list(V) -> list_to_binary(V) ;
-to_binary(V) when is_binary(V) -> V.
+to_binary(X) -> eb_utils:to_binary(X).

@@ -3,6 +3,7 @@
 -behaviour(eb_adapter).
 
 -include_lib("epgsql/include/pgsql.hrl").
+-include_lib("erlbean/include/erlbean.hrl").
 
 %% eb_adapter callbacks
 -export([init/1,
@@ -16,6 +17,7 @@
          add_column/2,
          widen_column/2,
          update_record/2,
+         accept_type/2,
          close/1
         ]).
 
@@ -51,21 +53,21 @@ exec(Query, C) ->
     {reply, Reply, C}.
 
 quote(Name) ->
-    [$", Name, $"].
+    ["\"", Name, "\""].
 
 quote(Name, C) ->
     {reply, quote(Name), C}.
 
 %% Quote un paramètre
 pquote(Name) ->
-    [$', Name, $'].
+    ["'", Name, "'"].
 
 %% ===================================================================
 %% SCHEMA MODIFICATIONS
 %% ===================================================================
 
 check({table, Name}, C) ->
-    {ok, Re} = re:compile("^[a-z_]{1,63}$"),
+    {ok, Re} = re:compile("^[a-z_][0-9a-z_]{1,62}$"),
     Reply = case re:run(Name,Re)
         of {match, _} -> true
          ; _ -> false
@@ -73,7 +75,7 @@ check({table, Name}, C) ->
     {reply, Reply, C};
 
 check({column, Name}, C) ->
-    {ok, Re} = re:compile("^[a-z_]{1,63}$"), %% @todo regarder les restrictions pour les colonnes
+    {ok, Re} = re:compile("^[a-z_][0-9a-z_]{1,62}$"), %% @todo regarder les restrictions pour les colonnes
     Reply = case re:run(Name,Re)
         of {match, _} -> true
          ; _ -> false
@@ -111,6 +113,7 @@ add_column({Table, Column, Type}, C) ->
     end,
     {reply, Reply, C}.
 
+
 widen_column({Table, Column, NewType}, C) ->
     PgType = dba2pgtype(NewType),
     Reply = case q(C, ["alter table ", Table, " alter column ", Column," TYPE ", PgType])
@@ -140,6 +143,12 @@ dba2pgtype(integer) -> <<"integer">>;
 dba2pgtype(text) -> <<"text">>;
 dba2pgtype(binary) -> <<"bytea">>.
 
+accept_type(Info, C) -> {reply, accept_type(Info), C}.
+
+-spec accept_type({eb_adapter:dbatype(), eb_adapter:dbatype()}) -> true | {false, NewType :: eb_adapter:dbatype()}.
+accept_type({integer,text}) -> {false, text};
+accept_type({text,integer}) -> true.
+
 %% ===================================================================
 %% RECORDS INSERT/UPDATE
 %% ===================================================================
@@ -153,7 +162,7 @@ update_record({Table, KeyVals, ID}, C) ->
 insert_record(Table, KeyVals, C) ->
     %% on append une chaine vide pour avoir la première virgule
     Keys = [""|[atom_to_list(K) || {K,_V} <- KeyVals]],
-    Vals = [V || V <- KeyVals],
+    Vals = [V || {_K,V} <- KeyVals],
     Columns = string:join(Keys,","),
 
     %% Quand on génère les marqueurs, ils sont en ordre décroissant,
@@ -162,10 +171,12 @@ insert_record(Table, KeyVals, C) ->
     {_, Markers} = lists:foldl(
         fun(_V,{X, Dolls}) -> %% returns ["$n", ... "$2", "$1"]
             {X+1, [", $", integer_to_list(X+1)|Dolls]}
-        end, {0,[]},Vals),
+        end, {0,[]},Vals), %% ici Vals n'est utilisé que pour la longueur de la liste
 
     Q = ["insert into ", Table, " (id " , Columns, " ) VALUES "
          "( DEFAULT ", Markers, " ) returning id"],
+    QBIN = iolist_to_binary(Q),
+                    % ?DBGTYPE(QBIN),
     {ok, _, _, [{ID}]} = q(C,Q, lists:reverse(Vals)),
     {reply, {ok, ID}, C}.
 
@@ -177,11 +188,14 @@ insert_record(Table, KeyVals, C) ->
 %%%===================================================================
 
 q(C, Query) ->
+    % ?DBGTYPE(Query),
     Rep = pgsql:equery(C, Query),
     tty_db_if_error(Rep, Query),
     Rep.
 
 q(C, Query, Bindings) ->
+    % ?DBGTYPE(Query),
+    % ?DBGTYPE(Bindings),
     Rep = pgsql:equery(C, Query, Bindings),
     tty_db_if_error(Rep, Query),
     Rep.
