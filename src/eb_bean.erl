@@ -25,7 +25,7 @@ get(Key, {eb_bean,Bean}) when is_atom(Key) ->
          ; error -> undefined
     end.
 
-set([], ?WRAPPER=Wrapper) ->
+set([], Wrapper) ->
     {ok, Wrapper};
 
 set([{Key,Value}|Props], Wrapper) ->

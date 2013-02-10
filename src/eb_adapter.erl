@@ -9,6 +9,8 @@
 -export_type([dbatype/0]).
 -type dbatype() :: integer | double | binary | text.
 
+-record(state, {m, dbastate}).
+
 %% API
 -export([start_link/2,stop/1]).
 -export([exec/2,exec/3]).
@@ -28,9 +30,14 @@
 %% TEST EXPORT
 -ifdef(TEST).
 -export([get_state/1,set_state/2]).
+%%%===================================================================
+%%% TEST API
+%%%===================================================================
+
+get_state(Pid) -> gen_server:call(Pid, get_state).
+set_state(Pid, State) -> gen_server:call(Pid, {set_state, State}).
 -endif.
 
--record(state, {m, dbastate}).
 
 
 behaviour_info(callbacks) ->
@@ -134,12 +141,9 @@ get_type(Pid, Table, Column) ->
 %% values of the type Candidate.
 %% The adapter function must return 'true' or {false, NewType}
 %% NewType must accept the value
-accept_type(Pid, X, X) ->
-
-                    % ?DBGTYPE(X),
-    true; %% if types are the same, always accept
+accept_type(_Pid, X, X) ->
+     true; %% if types are the same, always accept
 accept_type(Pid, CurrentColType, Candidate) ->
-                    % ?DBGTYPE({CurrentColType, Candidate}),
     gen_server:call(Pid, {accept_type, {CurrentColType, Candidate}}).
 
 %% queries -----------------------------------------------------------
@@ -158,12 +162,7 @@ update_record(Pid, Table, KeyVals, ID) ->
 stop(Pid) ->
     gen_server:call(Pid, stop).
 
-%%%===================================================================
-%%% TEST API
-%%%===================================================================
 
-get_state(Pid) -> gen_server:call(Pid, get_state).
-set_state(Pid, State) -> gen_server:call(Pid, {set_state, State}).
 
 %%%===================================================================
 %%% gen_server callbacks
@@ -178,7 +177,7 @@ init([AdapterModule, Conf]) ->
 
 %% handle_call -------------------------------------------------------
 
-handle_call(stop, _From, #state{m=M, dbastate=DS}=State) ->
+handle_call(stop, _From, State) ->
     {stop, normal, State};
 
 handle_call(get_state, _From, State) ->

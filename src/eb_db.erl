@@ -178,6 +178,6 @@ code_change(_OldVsn, State, _Extra) ->
 %%% Internal functions
 %%%===================================================================
 
-wrap(#bean{}=B) -> {eb_bean, B}.
+% wrap(#bean{}=B) -> {eb_bean, B}.
 
 fmode_module(fluid) -> eb_db_fluid.

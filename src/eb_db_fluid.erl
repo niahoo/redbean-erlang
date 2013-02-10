@@ -47,8 +47,6 @@ adapt_column(DBA, BeanType, Key, Val) ->
     ColToList = atom_to_list(Key),
     case eb_adapter:column_exists(DBA, BeanType, Key)
         of false ->
-            NewColumn = Key,
-            % ?DBGTYPE(NewColumn),
             ok = eb_adapter:add_column(DBA, BeanType, ColToList, ValType)
          ; true  -> %% columns exists, check if we must widen
             CurrentColType = eb_adapter:get_type(DBA, BeanType, Key),

@@ -156,7 +156,7 @@ accept_type({text,integer}) -> true.
 update_record({Table, KeyVals, undefined=_ID}, C) ->
     insert_record(Table, KeyVals, C);
 
-update_record({Table, KeyVals, ID}, C) ->
+update_record({_Table, _KeyVals, _ID}, C) ->
     {reply, {ok, kikoolol}, C}.
 
 insert_record(Table, KeyVals, C) ->
@@ -167,7 +167,6 @@ insert_record(Table, KeyVals, C) ->
 
     %% Quand on génère les marqueurs, ils sont en ordre décroissant,
     %% c'est pourquoi il faut renverser la liste des valeurs
-
     {_, Markers} = lists:foldl(
         fun(_V,{X, Dolls}) -> %% returns ["$n", ... "$2", "$1"]
             {X+1, [", $", integer_to_list(X+1)|Dolls]}
@@ -175,8 +174,6 @@ insert_record(Table, KeyVals, C) ->
 
     Q = ["insert into ", Table, " (id " , Columns, " ) VALUES "
          "( DEFAULT ", Markers, " ) returning id"],
-    QBIN = iolist_to_binary(Q),
-                    % ?DBGTYPE(QBIN),
     {ok, _, _, [{ID}]} = q(C,Q, lists:reverse(Vals)),
     {reply, {ok, ID}, C}.
 
