@@ -18,3 +18,6 @@ gettype_test() ->
     Bean = eb_bean:new(testb),
     ?assertEqual(testb,Bean:type()).
 
+gettainted_test() ->
+    Bean = eb_bean:new(testb),
+    ?assertEqual(true,Bean:tainted()).

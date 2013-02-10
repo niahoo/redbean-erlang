@@ -43,24 +43,22 @@ internals_test_() ->
                 end
             }
         }
-        % ,
-        % {"If a bean is tainted, :store() should create a table",
-        %     {
-        %         setup, local,
-        %         fun startapp/0,
-        %         fun stopapp/1,
-        %         fun (started) ->
-        %             Bean = eb:dispense(bean),
-        %             S = eb_adapter_epgsql,
-        %             DBAState = S:get_state(dba()),
-        %             {inorder, [
-        %                 ?_assertNot(S:x_table_exists(<<"mytype">>, DBAState)),
-        %                 ?_assertMatch({ok, _}, eb_db:store(Bean)),
-        %                 ?_assert(S:x_table_exists(<<"mytype">>, DBAState))
-        %             ]}
-        %         end
-        %     }
-        % }
+        ,
+        {"If a bean is tainted, :store() should create a table",
+            {
+                setup, local,
+                fun startapp/0,
+                fun stopapp/1,
+                fun (started) ->
+                    Bean = eb:dispense(mytype),
+                    {ok, _Bean2} = eb:store(Bean),
+                    {inorder, [
+                        ?_assert(eb_adapter:table_exists(dba(),mytype)),
+                        ?_assertMatch({ok, [], []},eb_adapter:exec(dba(),"drop table mytype"))
+                    ]}
+                end
+            }
+        }
         % {"If a bean is tainted, :store() should make it not tainted",
         %     {
         %         setup, local,
@@ -89,5 +87,5 @@ stopapp(_) ->
     ok = application:stop(erlbean),
     error_logger:tty(true).
 
-tk() -> eb_db:get_eb_db().
-dba() -> eb_db:get_adapter(tk()).
+db() -> eb_db:get_eb_db().
+dba() -> eb_db:get_adapter(db()).

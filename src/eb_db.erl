@@ -5,7 +5,7 @@
 
 -behaviour(gen_server).
 
-
+-define(DB,get_eb_db()).
 
 
 %% Global API
@@ -42,7 +42,7 @@ get_eb_db() ->
             gproc:reg({n,l,eb_db}, default_eb_db),
             get_eb_db()
     end.
-tk() -> get_eb_db().
+
 
 %% ===================================================================
 %% API
@@ -57,17 +57,17 @@ get_adapter(Pid) ->
 
 
 
-store({eb_bean, #bean{tainted=false}}=Wrapper) ->
+store({eb_bean, #bean{tainted=false}}=Bean) ->
     %% @todo check if processlist
-    Wrapper;
+    Bean;
 
-store({eb_bean, #bean{}=Bean}) ->
+store(Bean) ->
     {ok, NewBean} = store_bean(Bean),
-    {ok, wrap(NewBean)}.
+    {ok, NewBean}.
 
 
-store_bean(#bean{}=Bean) ->
-    {ok, NewBean} = gen_server:call(tk(), {store,Bean}),
+store_bean(Bean) ->
+    {ok, NewBean} = gen_server:call(?DB, {store,Bean}),
     {ok, NewBean}.
 
 

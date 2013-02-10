@@ -10,10 +10,13 @@
 handle({store, Bean}, _From, State) ->
     %% first check if table exists and create it if not
     DBA = State#ebdb.dba,
-    % case eb_adapter:table_exists(DBA, Bean:type())
-    %     of true -> ok
-    %      ; false ->
-    %         {ok, _, _} =
+    Type = Bean:type(),
+    case eb_adapter:table_exists(DBA, Type)
+        of true ->
+            ok
+         ; false ->
+            ok = eb_adapter:create_table(DBA, Type)
+    end,
     {reply, {ok, Bean}, State};
 
 handle(_Request, _From, State) ->
