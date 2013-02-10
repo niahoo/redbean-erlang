@@ -151,7 +151,8 @@ update_record({Table, KeyVals, ID}, C) ->
     {reply, {ok, kikoolol}, C}.
 
 insert_record(Table, KeyVals, C) ->
-    Keys = [atom_to_list(K) || {K,_V} <- KeyVals],
+    %% on append une chaine vide pour avoir la première virgule
+    Keys = [""|[atom_to_list(K) || {K,_V} <- KeyVals]],
     Vals = [V || V <- KeyVals],
     Columns = string:join(Keys,","),
 

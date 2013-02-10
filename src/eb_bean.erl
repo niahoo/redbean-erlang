@@ -4,7 +4,7 @@
 -export([new/1]).
 -export([type/1]).
 -export([id/1]).
--export([map/2]).
+-export([map/2,fold/3]).
 -export([get/2,set/2,set/3,export/1,'export/id'/1]).
 -export([tainted/1,untaint/1]).
 
@@ -26,7 +26,7 @@ get(Key, {eb_bean,Bean}) when is_atom(Key) ->
     end.
 
 set([], ?WRAPPER=Wrapper) ->
-    Wrapper;
+    {ok, Wrapper};
 
 set([{Key,Value}|Props], Wrapper) ->
     {ok, NewWrapper} = set(Key, Value, Wrapper),
@@ -58,6 +58,10 @@ id(?WRAPPER) ->
 %% the bean with updated props
 map(Fun, ?WRAPPER) ->
     [Fun(Key, Val) || {Key, Val} <- ?DICT:to_list(Bean#bean.props)].
+
+fold(Fun, Acc, ?WRAPPER) ->
+    ?DICT:fold(Fun, Acc, Bean#bean.props).
+
 %%%===================================================================
 %%% Internal functions
 %%%===================================================================

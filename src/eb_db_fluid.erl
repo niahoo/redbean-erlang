@@ -8,16 +8,26 @@
 -export([handle/3]).
 
 handle({store, Bean}, _From, State) ->
-    %% first check if table exists and create it if not
     DBA = State#ebdb.dba,
-    Type = Bean:type(),
-    case eb_adapter:table_exists(DBA, Type)
+    BeanType = Bean:type(),
+    %% first check if table exists and create it if not
+    case eb_adapter:table_exists(DBA, BeanType)
         of true ->
             ok
          ; false ->
-            ok = eb_adapter:create_table(DBA, Type)
+            ok = eb_adapter:create_table(DBA, BeanType)
     end,
-    {ok, ID} = eb_adapter:update_record(DBA, atom_to_list(Bean:type()), Bean:'export/id'(), Bean:id()),
+    %% Then check each column if exists and if type accepts value
+    ok = Bean:fold(
+        fun (id, _Val, Acc) -> %% skip id return previous Acc
+               Acc;
+            (_Key, _Val, {error, Error}) -> %% previous adapt failed, return error
+               {error, Error};
+            (Key, Val, ok) -> %% previous adapt ok, process ne
+               adapt_column(DBA, BeanType, Key, Val)
+        end, ok),
+
+    {ok, ID} = eb_adapter:update_record(DBA, atom_to_list(BeanType), Bean:'export/id'(), Bean:id()),
     {ok, PostUpdateBean} = Bean:set(id,ID),
     {reply, {ok, PostUpdateBean:untaint()}, State};
 
@@ -25,3 +35,24 @@ handle(_Request, _From, State) ->
     Reply = {?MODULE, unknown_request},
     {reply, Reply, State}.
 
+
+%%%===================================================================
+%%% Internal functions
+%%%===================================================================
+
+
+%% Adapt columns : create column if not exists or widen type
+adapt_column(DBA, BeanType, Key, Val) ->
+    ValType = eb_adapter:scan_type(DBA, Val),
+    case eb_adapter:column_exists(DBA, BeanType, Key)
+        of false ->
+            ok = eb_adapter:add_column(DBA, BeanType, Key, ValType)
+         ; true  -> %% columns exists, check if we must widen
+            CurrentColType = eb_adapter:get_type(DBA, BeanType, Key),
+            case eb_adapter:accept_type(DBA, BeanType, Key, Val)
+                of true ->
+                    ok
+                 ; false ->
+                    ok = eb_adapter:widen_column(DBA, BeanType, Key, ValType)
+            end
+    end.

@@ -92,6 +92,21 @@ internals_test_() ->
                 end
             }
         }
+        ,
+        {"Create a bean should create columns",
+            {
+                setup, local,
+                fun startapp/0,
+                fun stopapp/1,
+                fun (started) ->
+                    Bean = (eb:dispense(mytype)):set([{col_1, "val 1"}, {col_2, "val II"}]),
+                    {ok, _Bean2} = eb:store(Bean),
+                    {inorder, [
+                        ?_assertMatch({ok, [], []},eb_adapter:get_columns(dba(),[<<"col_1">>,<<"col_2">>]))
+                    ]}
+                end
+            }
+        }
     ].
 
 

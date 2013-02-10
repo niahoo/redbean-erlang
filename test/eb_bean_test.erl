@@ -12,6 +12,8 @@ create_test() ->
 getset_test() ->
     Bean = eb_bean:new(testb),
     {ok, Bean2} = Bean:set(mykey,<<"My Value">>),
+    {ok, Bean2} = Bean:set([{mykey,<<"My Value">>}]),
+    {ok, BeanO} = Bean:set([{mykey,<<"My Value">>},{mykey_2,<<"My Value 2">>}]),
     ?assertEqual(Bean2:get(mykey),{ok, <<"My Value">>}).
 
 gettype_test() ->
@@ -31,6 +33,12 @@ map_test() ->
     {ok, Bean2} = Bean:set(a, "A"),
     {ok, Bean3} = Bean2:set(b, "B"),
     ?assertMatch([a, b, id],lists:sort(Bean3:map(fun(Key,_Val) -> Key end))).
+
+
+fold_test() ->
+    Bean = eb_bean:new(testb),
+    {ok, Bean2} = Bean:set([{'id',1},{b,2},{c,3},{d,4}]),
+    ?assertEqual(24, Bean2:fold(fun(_K,V,Acc) -> Acc*V end, 1)).
 
 get_props_test() ->
     Bean = eb_bean:new(testb),
