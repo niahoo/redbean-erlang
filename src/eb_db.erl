@@ -74,9 +74,10 @@ store_bean(Bean) ->
 
 load(Type, ID) ->
     RecordQuery = #rsq{table=eb_utils:to_binary(Type), props=[{id, ID}]},
+    % @todo transformer les row en bean
     case gen_server:call(?DB, {select_record, RecordQuery})
-        of {ok, 1, Bean} -> {ok, Bean}
-         ; {ok, 0, NewBean}    -> {not_found, NewBean}
+        of {ok, 1, Row} -> {ok, Row}
+         ; {ok, 0, []}    -> {not_found, []}
          ; Any           -> Any
     end.
 

@@ -35,9 +35,8 @@ handle({store, Bean}, _From, State) ->
 
 handle({select_record, RecordQuery}, _From, State) ->
     DBA = State#ebdb.dba,
-    {ok, Data} = eb_adapter:select_record(DBA, RecordQuery);
-
-
+    Reply = eb_adapter:select_record(DBA, RecordQuery),
+    {reply, Reply, State};
 
 handle(_Request, _From, State) ->
     Reply = {?MODULE, unknown_request},

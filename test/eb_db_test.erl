@@ -140,12 +140,13 @@ internals_test_() ->
                     ]),
                     {ok, Bean2} = eb:store(Bean),
                     ID = Bean2:id(),
-                    {ok, BeanL} = eb:load(mytype,ID),
+                    Wrap2 = eb:load(mytype,ID+20),
                     {inorder, [
-                        ?_assertMatch({ok, 45}, BeanL:get(age)),
-                        ?_assertMatch({ok, <<"Ruben Calderon">>}, BeanL:get(name)),
-                        ?_assertMatch({not_found, <<"Ruben Calderon">>}, BeanL:get(name)),
-                        ?_assertEqual(false, BeanL:tainted())
+                        % ?_assertMatch({ok, 45}, BeanL:get(age)),
+                        % ?_assertMatch({ok, <<"Ruben Calderon">>}, BeanL:get(name)),
+                        % ?_assertMatch({not_found, <<"Ruben Calderon">>}, BeanL:get(name)),
+                        % ?_assertEqual(false, BeanL:tainted())
+                        ?_assertMatch(ok, Wrap2)
                         ]}
                 end
             }

@@ -191,7 +191,6 @@ handle_call(get_state, _From, State) ->
 handle_call({set_state, NewState}, _From, _State) ->
     {reply, ok, NewState};
 
-%% ici c'est une q sans paramètres
 handle_call({Fun, Req}, _From, #state{m=M, dbastate=DS}=State) ->
     try M:Fun(Req, DS)
         of {reply, Reply, NewDS} -> {reply, Reply, State#state{dbastate=NewDS}}
