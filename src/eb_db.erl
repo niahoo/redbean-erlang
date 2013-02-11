@@ -71,14 +71,27 @@ store_bean(Bean) ->
     {ok, NewBean} = gen_server:call(?DB, {store,Bean}),
     {ok, NewBean}.
 
-
+%% La fonction load doit renvoyer un bean et un seul bin, car l'ID est
+%% censé être unique. On check donc qu'on ne récupère qu'un seul bean
+%% de l'adapter. L'adpter pourrait en renvoyer plusieurs si
+%% l'utilisateur fait n'importe quoi avec sa base de données
 load(Type, ID) ->
     RecordQuery = #rsq{table=eb_utils:to_binary(Type), props=[{id, ID}]},
     % @todo transformer les row en bean
-    case gen_server:call(?DB, {select_record, RecordQuery})
-        of {ok, 1, Row} -> {ok, Row}
-         ; {ok, 0, []}    -> {not_found, []}
-         ; Any           -> Any
+    PropList = gen_server:call(?DB, {select_record, RecordQuery}),
+    Bean = eb:dispense(Type),
+    case PropList
+        of {ok, 1, [Row]} ->
+                {ok, Bean2} = Bean:set(Row),
+                {ok, Bean2:untaint()}
+         ; {ok, 0, []}  ->
+                {not_found, Bean}
+         ; {ok, _X, Rows} when is_list(Rows) ->
+                FristRow = hd(Rows),
+                {ok, Bean2} = Bean:set(FristRow),
+                {ok, Bean2:untaint()}
+         ; Any ->
+                Any
     end.
 
 
@@ -92,6 +105,7 @@ get_adapter(Pid) ->
 %%%===================================================================
 
 %%--------------------------------------------------------------------
+
 %% @private
 %% @doc
 %% Initializes the server
@@ -197,3 +211,4 @@ code_change(_OldVsn, State, _Extra) ->
 % wrap(#bean{}=B) -> {eb_bean, B}.
 
 fmode_module(fluid) -> eb_db_fluid.
+

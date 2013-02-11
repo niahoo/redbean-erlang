@@ -179,12 +179,14 @@ insert_record(Table, KeyVals, C) ->
     {reply, {ok, ID}, C}.
 
 
-select_record(#rsq{table=Table,props=PS}=RecordQuery, C) ->
+select_record(#rsq{table=Table,props=PS}, C) ->
     {WhereSQL, Bindings} = build_match_clause(PS),
     Q = ["select * from ", Table, WhereSQL],
     Reply = case q(C,Q, Bindings)
-        of {ok, _Columns, [OneRow]} -> {ok, 1, OneRow}
-         ; {ok, _Columns, Rows} -> {ok, length(Rows), Rows}
+        of {ok, ColumnsInfo, Rows} ->
+            %% On a récupéré des rows, on doit renvoyer une proplist
+            %%                   [{Type eb_adapter:dbatype(), Value}]
+            {ok, length(Rows), read_rows(ColumnsInfo, Rows)}
          ; Any -> Any
     end,
     {reply, Reply, C}.
@@ -220,6 +222,8 @@ tty_db_if_error({error, #error{severity=S, code=C, message=M, extra=X}}, Q) ->
 
 tty_db_if_error(_,_) -> ok.
 
+%% SELECT FROM WHERE -------------------------------------------------
+
 build_match_clause([]) ->
     {"", []};
 build_match_clause(Props) ->
@@ -233,5 +237,26 @@ build_match_clause([{Key,Val}|Props], SqlAcc, Bindings, IMark) ->
     build_match_clause(Props, [SqlPart|SqlAcc], [Val|Bindings], IMark+1).
 
 
+%% format recordset --------------------------------------------------
+
+
+%% On reçoit les résultats d'un recordset epgsql, l'info sur les
+%% colonnes et les tuples correspondant aux rows
+read_rows(ColumnsInfo, Rows) ->
+    BinNames = lists:map(fun(Col) -> Col#column.name end, ColumnsInfo),
+    Names = lists:map(fun bin_to_atom/1, BinNames),
+    read_rows(Names, Rows, []).
+
+
+read_rows(_ColumnsInfo, [], Props) ->
+    %% no more rows, return
+    Props;
+
+read_rows(Names, [Row|Rows], Props) ->
+    RowProps = lists:zip(Names, tuple_to_list(Row)),
+    read_rows(Names, Rows, [RowProps|Props]).
+
 
 to_binary(X) -> eb_utils:to_binary(X).
+
+bin_to_atom(X) when is_binary(X) -> list_to_atom(binary_to_list(X)).

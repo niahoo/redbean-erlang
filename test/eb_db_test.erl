@@ -140,13 +140,13 @@ internals_test_() ->
                     ]),
                     {ok, Bean2} = eb:store(Bean),
                     ID = Bean2:id(),
-                    Wrap2 = eb:load(mytype,ID+20),
+                    {ok, BeanL} = eb:load(mytype,ID),
                     {inorder, [
-                        % ?_assertMatch({ok, 45}, BeanL:get(age)),
-                        % ?_assertMatch({ok, <<"Ruben Calderon">>}, BeanL:get(name)),
-                        % ?_assertMatch({not_found, <<"Ruben Calderon">>}, BeanL:get(name)),
-                        % ?_assertEqual(false, BeanL:tainted())
-                        ?_assertMatch(ok, Wrap2)
+                        ?_assertMatch({ok, 45}, BeanL:get(age)),
+                        ?_assertMatch({ok, <<"Ruben Calderon">>}, BeanL:get(name)),
+                        %% load a non-existing ID
+                        ?_assertMatch({not_found, {eb_bean, #bean{}}}, eb:load(mytype,-1)),
+                        ?_assertEqual(false, BeanL:tainted())
                         ]}
                 end
             }

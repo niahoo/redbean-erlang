@@ -13,7 +13,7 @@
 -export([store/1]).
 -export([get_eb_db/0]).
 
-
+%% TEST --------------------------------------------------------------
 
 -define(TESTCONF, [{user,"test"},{password,"test"},{host,"localhost"},{opts,[{database,"test"}]}]).
 
