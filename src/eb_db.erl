@@ -15,6 +15,7 @@
 -export([start_link/4]).
 -export([get_adapter/1]).
 -export([store/1]).
+-export([load/2]).
 
 
 %% gen_server callbacks
@@ -52,9 +53,9 @@ start_link(Adapter, Name, Conf, FMode) ->
     % error_logger:info_msg("Starting eb_db for ~p~n", [Name]),
     {ok, _Pid} = gen_server:start_link({local, Name}, ?MODULE, [Adapter, Conf, FMode], []).
 
-get_adapter(Pid) ->
-    gen_server:call(Pid,get_adapter).
 
+
+%% Working with beans ------------------------------------------------
 
 
 store({eb_bean, #bean{tainted=false}}=Bean) ->
@@ -70,6 +71,20 @@ store_bean(Bean) ->
     {ok, NewBean} = gen_server:call(?DB, {store,Bean}),
     {ok, NewBean}.
 
+
+load(Type, ID) ->
+    RecordQuery = #rsq{table=eb_utils:to_binary(Type), props=[{id, ID}]},
+    case gen_server:call(?DB, {select_record, RecordQuery})
+        of {ok, 1, Bean} -> {ok, Bean}
+         ; {ok, 0, NewBean}    -> {not_found, NewBean}
+         ; Any           -> Any
+    end.
+
+
+%% Other -------------------------------------------------------------
+
+get_adapter(Pid) ->
+    gen_server:call(Pid,get_adapter).
 
 %%%===================================================================
 %%% gen_server callbacks

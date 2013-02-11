@@ -5,6 +5,7 @@
 
 -export([setup/2,setup/3,setup/4]).
 -export([dispense/1]).
+-export([load/2]).
 -export([store/1]).
 -export([get_eb_db/0]).
 
@@ -29,6 +30,7 @@ dispense(Type) -> eb_bean:new(Type).
 
 store(Wrapper) -> eb_db:store(Wrapper).
 
+load(Type, ID) -> eb_db:load(Type, ID).
 
 %% regarde dans gproc le toolkit enregistré. Si pas de toolkit on
 %% catch une exception enregistré on  renvoie le toolkit par defaut :

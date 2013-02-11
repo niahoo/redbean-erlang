@@ -116,13 +116,37 @@ internals_test_() ->
                 fun (started) ->
                     {ok, Bean} = (eb:dispense(mytype)):set(
                         [{col_1, "this is text"}, %% text in an integer column
-                        {col_2, 321}              %% integer in a text column
+                         {col_2, 321}             %% integer in a text column
                     ]),
                     {ok, _Bean2} = eb:store(Bean),
                     {ok, Cols} = eb_adapter:get_columns(dba(),mytype),
                     {inorder, [
                         ?_assertMatch([{<<"col_1">>,text},{<<"col_2">>,text},{<<"id">>,integer}],lists:sort(Cols))
                     ]}
+                end
+            }
+        }
+        ,
+        {"Load a bean should get the values from the database, if the bean exists"
+         " else a new bean is returned",
+            {
+                setup, local,
+                fun startapp/0,
+                fun stopapp/1,
+                fun (started) ->
+                    {ok, Bean} = (eb:dispense(mytype)):set(
+                        [{name, "Ruben Calderon"},
+                         {age, 45}
+                    ]),
+                    {ok, Bean2} = eb:store(Bean),
+                    ID = Bean2:id(),
+                    {ok, BeanL} = eb:load(mytype,ID),
+                    {inorder, [
+                        ?_assertMatch({ok, 45}, BeanL:get(age)),
+                        ?_assertMatch({ok, <<"Ruben Calderon">>}, BeanL:get(name)),
+                        ?_assertMatch({not_found, <<"Ruben Calderon">>}, BeanL:get(name)),
+                        ?_assertEqual(false, BeanL:tainted())
+                        ]}
                 end
             }
         }

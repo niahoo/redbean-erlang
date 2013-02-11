@@ -23,13 +23,21 @@ handle({store, Bean}, _From, State) ->
                Acc;
             (_Key, _Val, {error, Error}) -> %% previous adapt failed, return error
                {error, Error};
-            (Key, Val, ok) -> %% previous adapt ok, process ne
+            (Key, Val, ok) -> %% previous adapt ok, process next
                adapt_column(DBA, BeanType, Key, Val)
         end, ok),
 
     {ok, ID} = eb_adapter:update_record(DBA, to_binary(BeanType), Bean:'export/id'(), Bean:id()),
     {ok, PostUpdateBean} = Bean:set(id,ID),
     {reply, {ok, PostUpdateBean:untaint()}, State};
+
+
+
+handle({select_record, RecordQuery}, _From, State) ->
+    DBA = State#ebdb.dba,
+    {ok, Data} = eb_adapter:select_record(DBA, RecordQuery);
+
+
 
 handle(_Request, _From, State) ->
     Reply = {?MODULE, unknown_request},

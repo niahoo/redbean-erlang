@@ -17,6 +17,7 @@
          add_column/2,
          widen_column/2,
          update_record/2,
+         select_record/2,
          accept_type/2,
          close/1
         ]).
@@ -59,8 +60,8 @@ quote(Name, C) ->
     {reply, quote(Name), C}.
 
 %% Quote un paramètre
-pquote(Name) ->
-    ["'", Name, "'"].
+pquote(X) ->
+    ["'", X, "'"].
 
 %% ===================================================================
 %% SCHEMA MODIFICATIONS
@@ -178,7 +179,15 @@ insert_record(Table, KeyVals, C) ->
     {reply, {ok, ID}, C}.
 
 
-
+select_record(#rsq{table=Table,props=PS}=RecordQuery, C) ->
+    {WhereSQL, Bindings} = build_match_clause(PS),
+    Q = ["select * from ", Table, WhereSQL],
+    Reply = case q(C,Q, Bindings)
+        of {ok, _Columns, [OneRow]} -> {ok, 1, OneRow}
+         ; {ok, _Columns, Rows} -> {ok, length(Rows), Rows}
+         ; Any -> Any
+    end,
+    {reply, Reply, C}.
 
 %%%===================================================================
 %%% Internal functions
@@ -210,3 +219,19 @@ tty_db_if_error({error, #error{severity=S, code=C, message=M, extra=X}}, Q) ->
     );
 
 tty_db_if_error(_,_) -> ok.
+
+build_match_clause([]) ->
+    {"", []};
+build_match_clause(Props) ->
+    build_match_clause(Props, [], [], 1).
+
+build_match_clause([], SqlAcc, Bindings, IMark) ->
+    {[" WHERE True " | SqlAcc], Bindings};
+
+build_match_clause([{Key,Val}|Props], SqlAcc, Bindings, IMark) ->
+    SqlPart = [" AND ", to_binary(Key), " = $", integer_to_list(IMark), " "],
+    build_match_clause(Props, [SqlPart|SqlAcc], [Val|Bindings], IMark+1).
+
+
+
+to_binary(X) -> eb_utils:to_binary(X).

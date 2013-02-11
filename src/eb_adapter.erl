@@ -17,6 +17,7 @@
 -export([table_exists/2,create_table/2,get_tables/1]).
 -export([quote/2,check/2,scan_type/2]).
 -export([update_record/4]).
+-export([select_record/2]).
 -export([column_exists/3,add_column/4,get_columns/2,widen_column/4,get_type/3,accept_type/3]).
 
 %% gen_server callbacks
@@ -54,6 +55,7 @@ behaviour_info(callbacks) ->
      {widen_column, 2},
      {accept_type, 2},
      {update_record, 2},
+     {select_record, 2},
      {close, 1} %% close the connexion
     ];
 
@@ -156,6 +158,10 @@ exec(Pid, Query, Bindings) ->
 
 update_record(Pid, Table, KeyVals, ID) ->
     gen_server:call(Pid, {update_record, {Table, KeyVals, ID}}).
+
+select_record(Pid, #rsq{table=Table}=RecordQuery) ->
+    true = check(Pid, {table, Table}),
+    gen_server:call(Pid, {select_record, RecordQuery}).
 
 %% stop --------------------------------------------------------------
 
