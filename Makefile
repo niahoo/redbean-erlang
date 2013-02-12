@@ -36,6 +36,12 @@ vm-args:
 		echo '-pa' $$i >> priv/vm-args; \
 	done
 
+dial:
+	dialyzer \
+		--src -r src \
+		-pa $(HOME)/src/erlbean \
+		-pa $(HOME)/src/erlbean/deps/epgsql \
+		--verbose
 
 doc:
 	@(rebar skip_deps=true doc)

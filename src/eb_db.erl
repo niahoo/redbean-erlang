@@ -57,15 +57,11 @@ start_link(Adapter, Name, Conf, FMode) ->
 
 %% Working with beans ------------------------------------------------
 
-
-store({eb_bean, #bean{tainted=false}}=Bean) ->
-    %% @todo check if processlist
-    Bean;
-
 store(Bean) ->
-    {ok, NewBean} = store_bean(Bean),
-    {ok, NewBean}.
-
+    case Bean:tainted()
+        of false -> Bean
+         ; true  -> {ok, _NewBean} = store_bean(Bean)
+    end.
 
 store_bean(Bean) ->
     {ok, NewBean} = gen_server:call(?DB, {store,Bean}),

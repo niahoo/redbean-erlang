@@ -6,9 +6,6 @@
 -export([behaviour_info/1]).
 -behaviour(gen_server).
 
--export_type([dbatype/0]).
--type dbatype() :: integer | double | binary | text.
-
 -record(state, {m, dbastate}).
 
 %% API
@@ -28,13 +25,11 @@
      terminate/2,
      code_change/3]).
 
-%% TEST EXPORT
--ifdef(TEST).
--export([get_state/1,set_state/2]).
 %%%===================================================================
 %%% TEST API
 %%%===================================================================
-
+-ifdef(TEST).
+-export([get_state/1,set_state/2]).
 get_state(Pid) -> gen_server:call(Pid, get_state).
 set_state(Pid, State) -> gen_server:call(Pid, {set_state, State}).
 -endif.

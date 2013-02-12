@@ -1,19 +1,29 @@
 -module(eb_bean).
 
+-define(WRAPPER, {eb_bean, Bean}).
+
+
+-include_lib("erlbean/include/erlbean.hrl").
+
+-type beanrecord() :: #bean{}.
+-opaque bean() :: {eb_bean, beanrecord()}.
+
 
 -export([new/1]).
+-export([wrap/1]).
 -export([type/1]).
 -export([id/1]).
 -export([map/2,fold/3]).
 -export([get/2,set/2,set/3,export/1,'export/id'/1]).
 -export([tainted/1,untaint/1]).
 
--define(WRAPPER, {eb_bean, Bean}).
-
--include_lib("erlbean/include/erlbean.hrl").
-
+%% beanrecord is exported for testing purposes, do not use
+-export_type([bean/0]).
 
 
+wrap(#bean{}=Bean) -> ?WRAPPER.
+
+-spec new(atom()) -> eb_bean:bean().
 new(Type) when is_atom(Type) ->
     Dict = ?DICT:new(),
     Dict2 = ?DICT:store(id, undefined, Dict),
@@ -66,5 +76,3 @@ fold(Fun, Acc, ?WRAPPER) ->
 %%% Internal functions
 %%%===================================================================
 
-
-wrap(#bean{}=Bean) -> ?WRAPPER.

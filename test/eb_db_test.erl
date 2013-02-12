@@ -34,9 +34,9 @@ internals_test_() ->
                 fun startapp/0,
                 fun stopapp/1,
                 fun (started) ->
-                    {eb_bean, Bean} = eb:dispense(bean),
-                    Bean2 = Bean#bean{tainted=false},
-                    {eb_bean, Bean3} = eb:store({eb_bean, Bean2}),
+                    Bean = eb:dispense(bean),
+                    Bean2 = Bean:untaint(),
+                    Bean3 = eb:store(Bean2),
                     {inorder, [
                         ?_assertMatch(Bean2, Bean3)
                     ]}
@@ -145,7 +145,7 @@ internals_test_() ->
                         ?_assertMatch({ok, 45}, BeanL:get(age)),
                         ?_assertMatch({ok, <<"Ruben Calderon">>}, BeanL:get(name)),
                         %% load a non-existing ID
-                        ?_assertMatch({not_found, {eb_bean, #bean{}}}, eb:load(mytype,-1)),
+                        ?_assertMatch({not_found, {eb_bean, SomeBean}}, eb:load(mytype,-1)),
                         ?_assertEqual(false, BeanL:tainted())
                         ]}
                 end
