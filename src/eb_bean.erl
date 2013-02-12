@@ -42,10 +42,9 @@ set([{Key,Value}|Props], Wrapper) ->
     {ok, NewWrapper} = set(Key, Value, Wrapper),
     set(Props, NewWrapper).
 
-
 set(Key, Value, ?WRAPPER) when is_atom(Key) ->
    NewProps = ?DICT:store(Key, Value, Bean#bean.props),
-   {ok, wrap(Bean#bean{props=NewProps})}.
+   {ok, wrap(Bean#bean{props=NewProps, tainted=true})}.
 
 export(?WRAPPER) ->
     ?DICT:to_list(Bean#bean.props).

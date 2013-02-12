@@ -24,6 +24,15 @@ t() ->
 db1() -> eb:setup(epgsql,?TESTCONF).
 db2() -> eb:setup(epgsql,other_eb_db, ?TESTCONF).
 
+ship() ->
+    db1(),
+    Ship = eb:dispense(ship),
+    {ok, Ship2} = Ship:set([{name, "My Hobocab"},{itemtype_id, 34}]),
+    {ok, Ship3} = eb:store(Ship2).
+
+
+
+
 
 
 

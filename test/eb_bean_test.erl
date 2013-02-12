@@ -16,6 +16,15 @@ getset_test() ->
     {ok, BeanO} = Bean:set([{mykey,<<"My Value">>},{mykey_2,<<"My Value 2">>}]),
     ?assertEqual(Bean2:get(mykey),{ok, <<"My Value">>}).
 
+
+set_make_tainted_test() ->
+    Bean = eb:dispense(testb),
+    {ok, Bean2} = Bean:set([{aaa,"aaa"},{bbb,"bbb"}]),
+    Bean2_ut = Bean2:untaint(),
+    ?assertEqual(false, Bean2_ut:tainted()),
+    {ok, Bean3} = Bean2_ut:set([{aaa,"zzz"},{xxx,"yyy"}]),
+    ?assertEqual(true, Bean3:tainted()).
+
 gettype_test() ->
     Bean = eb_bean:new(testb),
     ?assertEqual(testb,Bean:type()).
