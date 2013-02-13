@@ -3,7 +3,7 @@
 -include_lib("erlbean/include/erlbean.hrl").
 
 -export([t/0]).
--export([db1/0,db2/0]).
+-export([db1/0,db2/0,ship/0]).
 
 
 
@@ -28,7 +28,8 @@ ship() ->
     db1(),
     Ship = eb:dispense(ship),
     {ok, Ship2} = Ship:set([{name, "My Hobocab"},{itemtype_id, 34}]),
-    {ok, Ship3} = eb:store(Ship2).
+    {ok, Ship3} = eb:store(Ship2),
+    Ship3.
 
 
 

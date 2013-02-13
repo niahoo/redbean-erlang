@@ -3,7 +3,6 @@
 
 -include_lib("erlbean/include/erlbean.hrl").
 
--export([behaviour_info/1]).
 -behaviour(gen_server).
 
 -record(state, {m, dbastate}).
@@ -26,6 +25,56 @@
      code_change/3]).
 
 %%%===================================================================
+%%% eb_adapter Behaviour definition
+%%%===================================================================
+
+-type dbareply(Reply) :: {reply, Reply, NewState :: term()}.
+
+-type dbaerror() :: dbareply({error, Reason :: term()}).
+
+-type row() :: [{Column :: binary(), Value :: term()}].
+
+-callback init(Conf :: term()) -> {ok, State :: term()} | {error, Reason :: term()}.
+
+-callback close(Sate :: term()) -> ok.
+
+-callback exec(Query :: term() | {Query :: term(), Bindings :: term()}, State :: term()) ->
+    dbareply(Result :: term()).
+
+-callback quote(Name :: term(), State :: term()) ->
+    dbareply(Quoted :: term()).
+
+-callback scan_type(Value :: term(), State :: term()) ->
+    dbareply(Type :: dbatype()).
+
+-callback check({table | column, Name :: binary()}, State :: term()) ->
+    dbareply(IsOk :: boolean()).
+
+-callback create_table(Table :: binary(), State :: term()) ->
+    dbareply(ok) | dbaerror().
+
+-callback get_tables(State :: term()) ->
+    dbareply({ok, [Table :: binary()]}).
+
+-callback add_column({Table :: binary(),  Column :: binary(), Type :: dbatype()}, State :: term()) ->
+    dbareply(ok) | dbaerror().
+
+-callback get_columns(Table :: binary(), State :: term()) ->
+    dbareply({ok, [{ColumnName :: binary(), Type :: dbatype()}]}).
+
+-callback widen_column({Table :: binary(),  Column :: binary(), Type :: dbatype()}, State :: term()) ->
+    dbareply(ok) | dbaerror().
+
+-callback accept_type({CurrentType :: dbatype(), ValueType :: dbatype()}) ->
+     true | {false, NewType :: dbatype()}.
+
+-callback update_record({Table :: binary(), KeyVals :: row(), ID :: term()}, State :: term()) ->
+    dbareply({ok, NewID :: term()}).
+
+-callback select_record(RecordSetQuery :: #rsq{}, State :: term()) ->
+    dbareply({ok, RecordCount :: pos_integer(), Rows :: [row()]}).
+
+%%%===================================================================
 %%% TEST API
 %%%===================================================================
 -ifdef(TEST).
@@ -33,29 +82,6 @@
 get_state(Pid) -> gen_server:call(Pid, get_state).
 set_state(Pid, State) -> gen_server:call(Pid, {set_state, State}).
 -endif.
-
-
-
-behaviour_info(callbacks) ->
-    [
-     {init,1}, %% initialization of adapter state
-     {quote, 2}, %% quote table and column names
-     {scan_type, 2}, %% check a value and define the :: eb_adapter:dbatype() that must be used
-     {check, 2}, %% check validity of a table/column name
-     {exec, 2}, %% execute a query and eventually return values
-     {create_table, 2},
-     {get_tables, 2},
-     {add_column, 2},
-     {get_columns, 2},
-     {widen_column, 2},
-     {accept_type, 2},
-     {update_record, 2},
-     {select_record, 2},
-     {close, 1} %% close the connexion
-    ];
-
-behaviour_info(_Other) ->
-    undefined.
 
 %%%===================================================================
 %%% API
@@ -68,6 +94,8 @@ start_link(AdapterModule, Conf) ->
 quote(Pid, Name) ->
     gen_server:call(Pid, {quote, Name}).
 
+check(Pid, {Object, Name}) when not is_binary(Name) ->
+    check(Pid, {Object, to_binary(Name)});
 check(Pid, {Object, Name}) ->
     gen_server:call(Pid, {check, {Object, Name}}).
 
@@ -82,11 +110,11 @@ create_table(Pid, Table) ->
     BinTable = to_binary(Table),
     case check(Pid, {table, BinTable})
         of true -> gen_server:call(Pid, {create_table, BinTable})
-         ; false -> {error, {bad_table_name, BinTable}}
+         ; false -> {error, {bad_table_name, Table}}
     end.
 
 get_tables(Pid) ->
-    gen_server:call(Pid, {get_tables, []}).
+    gen_server:call(Pid, {get_tables}).
 
 %% types -------------------------------------------------------------
 
@@ -172,9 +200,12 @@ stop(Pid) ->
 
 init([AdapterModule, Conf]) ->
     process_flag(trap_exit,true),
-    {ok, DBAState} = AdapterModule:init(Conf),
+    case AdapterModule:init(Conf)
+        of {ok, DBAState} -> {ok, #state{m=AdapterModule, dbastate=DBAState}}
+         ; {stop, Reason} -> {stop, Reason}
+    end.
     % error_logger:info_msg("Connection to postgres ok : ~p~n",[C]),
-    {ok, #state{m=AdapterModule, dbastate=DBAState}}.
+
 
 %% handle_call -------------------------------------------------------
 
@@ -186,6 +217,13 @@ handle_call(get_state, _From, State) ->
 handle_call({set_state, NewState}, _From, _State) ->
     {reply, ok, NewState};
 
+%% requests without paramters sent as unary tuples
+handle_call({Fun}, _From, #state{m=M, dbastate=DS}=State) ->
+    try M:Fun(DS)
+        of {reply, Reply, NewDS} -> {reply, Reply, State#state{dbastate=NewDS}}
+    catch
+        nocatch:any -> fuck
+    end;
 handle_call({Fun, Req}, _From, #state{m=M, dbastate=DS}=State) ->
     try M:Fun(Req, DS)
         of {reply, Reply, NewDS} -> {reply, Reply, State#state{dbastate=NewDS}}

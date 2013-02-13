@@ -11,7 +11,7 @@
          scan_type/2,
          check/2,
          exec/2,
-         get_tables/2,
+         get_tables/1,
          create_table/2,
          get_columns/2,
          add_column/2,
@@ -90,7 +90,7 @@ create_table(Table, C) ->
     end,
     {reply, Reply, C}.
 
-get_tables(_, C) ->
+get_tables(C) ->
     {ok, _Columns, Tables} = q(C,
         "select table_name from information_schema.tables
         where table_schema = 'public'"),
@@ -146,7 +146,7 @@ dba2pgtype(binary) -> <<"bytea">>.
 
 accept_type(Info, C) -> {reply, accept_type(Info), C}.
 
--spec accept_type({dbatype(), dbatype()}) -> true | {false, NewType :: dbatype()}.
+-spec accept_type({CurrentType :: dbatype(), ValueType :: dbatype()}) -> true | {false, NewType :: dbatype()}.
 accept_type({integer,text}) -> {false, text};
 accept_type({text,integer}) -> true.
 
@@ -233,7 +233,7 @@ build_match_clause([], SqlAcc, Bindings, _) ->
     {[" WHERE True " | SqlAcc], Bindings};
 
 build_match_clause([{Key,Val}|Props], SqlAcc, Bindings, IMark) ->
-    SqlPart = [" AND ", to_binary(Key), " = $", integer_to_list(IMark), " "],
+    SqlPart = [" AND ", Key, " = $", integer_to_list(IMark), " "],
     build_match_clause(Props, [SqlPart|SqlAcc], [Val|Bindings], IMark+1).
 
 
@@ -256,7 +256,5 @@ read_rows(Names, [Row|Rows], Props) ->
     RowProps = lists:zip(Names, tuple_to_list(Row)),
     read_rows(Names, Rows, [RowProps|Props]).
 
-
-to_binary(X) -> eb_utils:to_binary(X).
 
 bin_to_atom(X) when is_binary(X) -> list_to_atom(binary_to_list(X)).

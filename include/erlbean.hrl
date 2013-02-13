@@ -13,9 +13,10 @@
 -record(ebdb, { dba :: pid(),
                 m :: atom()}).
 
-%% record Query
+%% recordset Query
 -record(rsq, {  table :: binary(),
-                props}).
+                props = [] :: [{Column :: binary(), Value :: term()}]
+             }).
 
 
 

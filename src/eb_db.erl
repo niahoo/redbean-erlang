@@ -72,7 +72,7 @@ store_bean(Bean) ->
 %% de l'adapter. L'adpter pourrait en renvoyer plusieurs si
 %% l'utilisateur fait n'importe quoi avec sa base de données
 load(Type, ID) ->
-    RecordQuery = #rsq{table=eb_utils:to_binary(Type), props=[{id, ID}]},
+    RecordQuery = #rsq{table=eb_utils:to_binary(Type), props=[{<<"id">>, ID}]},
     % @todo transformer les row en bean
     PropList = gen_server:call(?DB, {select_record, RecordQuery}),
     Bean = eb:dispense(Type),
