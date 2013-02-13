@@ -8,6 +8,7 @@
 
 
 -export([setup/2,setup/3,setup/4]).
+-export([proc/1]).
 -export([dispense/1]).
 -export([load/2]).
 -export([store/1]).
@@ -51,6 +52,7 @@ setup(Adapter, Name, Conf) ->
 setup(Adapter, Name, Conf, FMode) when is_atom(Adapter) ->
     erlbean_sup:start_toolkit(Adapter, Name, Conf, FMode).
 
+%% Beans -------------------------------------------------------------
 
 dispense(Type) -> eb_bean:new(Type).
 
@@ -58,6 +60,11 @@ dispense(Type) -> eb_bean:new(Type).
 store(Wrapper) -> eb_db:store(Wrapper).
 
 load(Type, ID) -> eb_db:load(Type, ID).
+
+%% Procs -------------------------------------------------------------
+
+proc(Procedures) -> eb_proc:do(Procedures).
+
 
 %% regarde dans gproc le toolkit enregistré. Si pas de toolkit on
 %% catch une exception enregistré on  renvoie le toolkit par defaut :

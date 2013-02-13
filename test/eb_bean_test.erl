@@ -16,6 +16,9 @@ getset_test() ->
     {ok, BeanO} = Bean:set([{mykey,<<"My Value">>},{mykey_2,<<"My Value 2">>}]),
     ?assertEqual(Bean2:get(mykey),{ok, <<"My Value">>}).
 
+is_bean_test() ->
+    Bean = eb_bean:new(testb),
+    ?assert(Bean:is_bean()).
 
 set_make_tainted_test() ->
     Bean = eb:dispense(testb),

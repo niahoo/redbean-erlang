@@ -11,6 +11,7 @@
 
 -export([new/1]).
 -export([wrap/1]).
+-export([is_bean/1]).
 -export([type/1]).
 -export([id/1]).
 -export([map/2,fold/3]).
@@ -34,6 +35,9 @@ get(Key, {eb_bean,Bean}) when is_atom(Key) ->
         of {ok,Value} -> {ok,Value}
          ; error -> undefined
     end.
+
+is_bean(?WRAPPER) when is_record(Bean, bean) -> true;
+is_bean(_) -> false.
 
 set([], Wrapper) ->
     {ok, Wrapper};

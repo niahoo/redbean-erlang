@@ -75,7 +75,7 @@ load(Type, ID) ->
     RecordQuery = #rsq{table=eb_utils:to_binary(Type), props=[{<<"id">>, ID}]},
     % @todo transformer les row en bean
     PropList = gen_server:call(?DB, {select_record, RecordQuery}),
-    Bean = eb:dispense(Type),
+    Bean = eb_bean:new(Type),
     case PropList
         of {ok, 1, [Row]} ->
                 {ok, Bean2} = Bean:set(Row),
@@ -83,8 +83,8 @@ load(Type, ID) ->
          ; {ok, 0, []}  ->
                 {not_found, Bean}
          ; {ok, _X, Rows} when is_list(Rows) ->
-                FristRow = hd(Rows),
-                {ok, Bean2} = Bean:set(FristRow),
+                FirstRow = hd(Rows),
+                {ok, Bean2} = Bean:set(FirstRow),
                 {ok, Bean2:untaint()}
          ; Any ->
                 Any
