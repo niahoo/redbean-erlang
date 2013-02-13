@@ -28,5 +28,5 @@ start_test_db() ->
 %% propre module adapter
 
 adapter_module(epgsql) -> eb_adapter_epgsql;
-adapter_module(other) -> eb_adapter_epgsql.
+adapter_module(Other) -> Other.
 
