@@ -12,8 +12,10 @@ do([], [Return|Stack]) ->
 
 %% Functions cannot pop from stack
 
+do(_Steps, [abort|Stack]) -> aborted;
+
 do([Fun|Steps], Stack) when is_function(Fun) ->
-    debug_step(Fun),
+    % debug_step(Fun),
     Result = case erlang:fun_info(Fun, arity)
         of {arity, 0} -> Fun()
          ; {arity, 1} -> Fun(hd(Stack))
@@ -27,7 +29,7 @@ do([Fun|Steps], Stack) when is_function(Fun) ->
     do(Steps, [Result|Stack]);
 
 do([Step|Steps], Stack) ->
-    debug_step(Step),
+    % debug_step(Step),
     do(Steps, [eval(Step, Stack)|Stack]).
 
 

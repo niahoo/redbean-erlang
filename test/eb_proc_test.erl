@@ -12,7 +12,13 @@ interface_test_() ->
       [{"Test of utilities",
             setup, local, fun startapp/0, fun stopapp/1,
             fun(started) ->
-                Aborted = eb:proc([abort]),
+                Aborted = eb:proc([
+                    {load, mytype ,999},
+                    fun({ok, Bean}) -> Bean:id()
+                      ;({not_found, _}) -> abort
+                    end,
+                    {'NON EXISTING COMMAND'}
+                    ]),
                 [?_assertEqual(aborted,Aborted)]
             end
         }
