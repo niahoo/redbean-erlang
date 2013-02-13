@@ -2,9 +2,6 @@
 -define(DICT, orddict).
 -define(DBGTYPE(Var), error_logger:info_msg("DEBUG: ~p:~p - ~p ~p()~n~n ~p ~n~n", [?MODULE, ?LINE, ??Var,eb_utils:typeof(Var), Var])).
 
-
--type dbatype() :: integer | double | binary | text.
-
 -record(bean, { type :: atom(),
                 props,
                 tainted=true :: boolean()
@@ -18,5 +15,8 @@
                 props = [] :: [{Column :: binary(), Value :: term()}]
              }).
 
-
+-type dbatype() :: integer | double | binary | text.
+-type dbarow() :: [{Column :: binary(), Value :: term()}].
+-type dbarows() :: [dbarow()].
+-type rsq() :: #rsq{}.
 

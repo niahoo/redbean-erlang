@@ -24,15 +24,14 @@
      terminate/2,
      code_change/3]).
 
+-type dbareply(Reply) :: {reply, Reply, NewState :: term()}.
+-type dbaerror() :: dbareply({error, Reason :: term()}).
+
+
 %%%===================================================================
 %%% eb_adapter Behaviour definition
 %%%===================================================================
 
--type dbareply(Reply) :: {reply, Reply, NewState :: term()}.
-
--type dbaerror() :: dbareply({error, Reason :: term()}).
-
--type row() :: [{Column :: binary(), Value :: term()}].
 
 -callback init(Conf :: term()) -> {ok, State :: term()} | {error, Reason :: term()}.
 
@@ -65,14 +64,14 @@
 -callback widen_column({Table :: binary(),  Column :: binary(), Type :: dbatype()}, State :: term()) ->
     dbareply(ok) | dbaerror().
 
--callback accept_type({CurrentType :: dbatype(), ValueType :: dbatype()}) ->
+-callback accept_type(CurrentType :: dbatype(), ValueType :: dbatype()) ->
      true | {false, NewType :: dbatype()}.
 
--callback update_record({Table :: binary(), KeyVals :: row(), ID :: term()}, State :: term()) ->
+-callback update_record({Table :: binary(), KeyVals :: dbarow(), ID :: term()}, State :: term()) ->
     dbareply({ok, NewID :: term()}).
 
--callback select_record(RecordSetQuery :: #rsq{}, State :: term()) ->
-    dbareply({ok, RecordCount :: pos_integer(), Rows :: [row()]}).
+-callback select_record(RecordSetQuery :: rsq(), State :: term()) ->
+    dbareply({ok, RecordCount :: pos_integer(), Rows :: [dbarow()]}).
 
 %%%===================================================================
 %%% TEST API
