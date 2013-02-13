@@ -9,3 +9,7 @@ sein des fonctions
 Pareil, dans update record on reçoit les colonnes en atom et on les
 convertit en list pour join(",") alors que ce sont des colonnes et
 donc on a pris parti de les passer en binary à l'adapter
+
+- En interne, ne pas utiliser les appels de la forme Bean:function()
+mais utiliser eb_bean:function(Bean) à la place, pour permettre au
+dialyzer de faire son boulot
