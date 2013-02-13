@@ -198,7 +198,6 @@ stop(Pid) ->
 
 
 init([AdapterModule, Conf]) ->
-    process_flag(trap_exit,true),
     case AdapterModule:init(Conf)
         of {ok, DBAState} -> {ok, #state{m=AdapterModule, dbastate=DBAState}}
          ; {stop, Reason} -> {stop, Reason}
