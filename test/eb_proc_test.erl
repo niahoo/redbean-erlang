@@ -85,6 +85,24 @@ interface_test_() ->
   ]}.
 
 
+ % othertest() ->
+ %    AgeIsPair = fun({ok, Bean}) ->
+ %        {ok, Age} = Bean:get(age),
+ %        Age rem 2 =:= 0
+ %   end,
+ %    eb:proc([
+ %        {load, mytype, 23}
+ %      , {owned, mysub}
+ %      , {each, '_', {set, updated, erlang:now()}},
+ %      , {each, '_', store},
+ %      , fun(Beans) ->
+ %            {_Pairs, Impairs} = lists:partition(AgeIsPair, Beans),
+ %            Impairs
+ %        end
+ %      , {each, '_', trash}
+ %    ]).
+
+
 startapp() ->
     ok = application:start(erlbean),
     eb:setup(epgsql,?PGTESTCONF),

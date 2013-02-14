@@ -38,14 +38,14 @@ do([Step|Steps], Stack) ->
 %% Whe put the last item in stack in place of a '_' atom in the
 %% command
 
-eval({X,'_'}, [Head|_T]=Stack) -> eval({X,Head}, Stack);
-eval({'_',Y}, [Head|_T]=Stack) -> eval({Head,Y}, Stack);
+eval({X,'_'}, [Head|_T]=Stack) -> eval({X,unok(Head)}, Stack);
+eval({'_',Y}, [Head|_T]=Stack) -> eval({unok(Head),Y}, Stack);
 
 %% Same with 3-tuples
 
-eval({X,Y,'_'}, [Head|_T]=Stack) -> eval({X,Y,Head}, Stack);
-eval({X,'_',Z}, [Head|_T]=Stack) -> eval({X,Head,Z}, Stack);
-eval({'_',Y,Z}, [Head|_T]=Stack) -> eval({Head,Y,Z}, Stack);
+eval({X,Y,'_'}, [Head|_T]=Stack) -> eval({X,Y,unok(Head)}, Stack);
+eval({X,'_',Z}, [Head|_T]=Stack) -> eval({X,unok(Head),Z}, Stack);
+eval({'_',Y,Z}, [Head|_T]=Stack) -> eval({unok(Head),Y,Z}, Stack);
 
 %% Normal steps ------------------------------------------------------
 
