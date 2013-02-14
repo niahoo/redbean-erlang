@@ -161,10 +161,10 @@ get_type(Pid, Table, Column) ->
          ; none -> {error, {no_column, Column}}
     end.
 
-%% @doc ask the adapter if the column type CurrentColType accepts
+%% @doc Ask the adapter if the column type CurrentColType accepts
 %% values of the type Candidate.
-%% The adapter function must return 'true' or {false, NewType}
-%% NewType must accept the value
+%% The adapter function must return 'true' or {false, NewType} where
+%% NewType is a dbatype() which must accept the value
 accept_type(_Pid, X, X) ->
      true; %% if types are the same, always accept
 accept_type(Pid, CurrentColType, Candidate) ->

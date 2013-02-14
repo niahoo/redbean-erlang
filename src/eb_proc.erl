@@ -7,12 +7,12 @@ do(Procedure) ->
     Stack =  [],
     do(Procedure, Stack).
 
-do([], [Return|Stack]) ->
+do([], [Return|_Stack]) ->
     Return;
 
 %% Functions cannot pop from stack
 
-do(_Steps, [abort|Stack]) -> aborted;
+do(_Steps, [abort|_Stack]) -> aborted;
 
 do([Fun|Steps], Stack) when is_function(Fun) ->
     % debug_step(Fun),
@@ -38,14 +38,14 @@ do([Step|Steps], Stack) ->
 %% Whe put the last item in stack in place of a '_' atom in the
 %% command
 
-eval({X,'_'}, [Head|Tail]=Stack) -> eval({X,Head}, Stack);
-eval({'_',Y}, [Head|Tail]=Stack) -> eval({Head,Y}, Stack);
+eval({X,'_'}, [Head|_T]=Stack) -> eval({X,Head}, Stack);
+eval({'_',Y}, [Head|_T]=Stack) -> eval({Head,Y}, Stack);
 
 %% Same with 3-tuples
 
-eval({X,Y,'_'}, [Head|Tail]=Stack) -> eval({X,Y,Head}, Stack);
-eval({X,'_',Z}, [Head|Tail]=Stack) -> eval({X,Head,Z}, Stack);
-eval({'_',Y,Z}, [Head|Tail]=Stack) -> eval({Head,Y,Z}, Stack);
+eval({X,Y,'_'}, [Head|_T]=Stack) -> eval({X,Y,Head}, Stack);
+eval({X,'_',Z}, [Head|_T]=Stack) -> eval({X,Head,Z}, Stack);
+eval({'_',Y,Z}, [Head|_T]=Stack) -> eval({Head,Y,Z}, Stack);
 
 %% Normal steps ------------------------------------------------------
 
@@ -55,24 +55,24 @@ eval(abort, _Stack) ->
 eval({dispense, Type}, _Stack) ->
     eb_bean:new(Type);
 
-eval({set, Key, Value}, [ABean|Stack]) ->
+eval({set, Key, Value}, [ABean|_Stack]) ->
     Bean = unok(ABean),
     {ok, Bean2} = eb_bean:set(Key, Value, Bean),
     {ok, Bean2};
 
-eval({set, KeyValues}, [ABean|Stack]) when is_list(KeyValues) ->
+eval({set, KeyValues}, [ABean|_Stack]) when is_list(KeyValues) ->
     Bean = unok(ABean),
     {ok, _Bean2} = eb_bean:set(KeyValues, Bean);
 
-eval({load, Type, ID}, Stack) ->
+eval({load, Type, ID}, _Stack) ->
     eb_db:load(Type, ID);
 
-eval({get, Key}, [ABean|Stack]) ->
+eval({get, Key}, [ABean|_Stack]) ->
     Bean = unok(ABean),
     %% we do not ckeck if {ok, Val} because value can be undefined and that is ok
     eb_bean:get(Key, Bean);
 
-eval(store, [ABean|Stack]) ->
+eval(store, [ABean|_Stack]) ->
     Bean = unok(ABean),
     {ok, _Bean2} = eb_db:store(Bean);
 
@@ -83,8 +83,6 @@ eval(Step, _Stack) -> throw({error, {unknown_proc, Step}}).
 unok({ok, Value}) -> Value;
 unok(Value) -> Value.
 
-debug_step(F) when is_function(F) -> log(erlang:fun_to_list(F));
-debug_step(S) -> log(S).
-
-
-log(X) -> error_logger:info_msg("Step : ~p~n~n",[X]).
+% debug_step(F) when is_function(F) -> log(erlang:fun_to_list(F));
+% debug_step(S) -> log(S).
+% log(X) -> error_logger:info_msg("Step : ~p~n~n",[X]).

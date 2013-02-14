@@ -6,5 +6,5 @@
               {mod,{erlbean_app,[]}},
               {env,[]},
               {modules,[eb,eb_adapter,eb_adapter_epgsql,eb_bean,eb_db,
-                        eb_db_fluid,eb_utils,erlbean,erlbean_app,
+                        eb_db_fluid,eb_proc,eb_utils,erlbean,erlbean_app,
                         erlbean_facade,erlbean_sup,erlbean_toolkit]}]}.
