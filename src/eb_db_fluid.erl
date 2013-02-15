@@ -17,6 +17,7 @@ handle({store, Bean}, _From, State) ->
          ; false ->
             ok = eb_adapter:create_table(DBA, BeanType)
     end,
+
     %% Then check each column if exists and if type accepts value
     ok = Bean:fold(
         fun (id, _Val, Acc) -> %% skip id return previous Acc
@@ -27,7 +28,11 @@ handle({store, Bean}, _From, State) ->
                adapt_column(DBA, BeanType, Key, Val)
         end, ok),
 
+    %% Store the Bean in database
     {ok, ID} = eb_adapter:update_record(DBA, to_binary(BeanType), Bean:'export/id'(), Bean:id()),
+
+    %%
+
     {ok, PostUpdateBean} = Bean:set(id,ID),
     {reply, {ok, PostUpdateBean:untaint()}, State};
 
