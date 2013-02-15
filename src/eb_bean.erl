@@ -1,7 +1,6 @@
 -module(eb_bean).
 
 -define(WRAPPER, {eb_bean, Bean}).
-
 -define(DICT, orddict).
 -define(METADICT, orddict).
 
@@ -27,6 +26,7 @@
 -export([get/2,set/2,set/3,export/1,'export/id'/1]).
 -export([tainted/1,untaint/1]).
 -export([set_meta/3,set_meta/2,get_meta/2,append_meta/3]).
+-export([own/2]).
 
 %% beanrecord is exported for testing purposes, do not use
 -export_type([bean/0]).
@@ -112,6 +112,15 @@ set_meta(Key, Value, ?WRAPPER) ->
 append_meta(Key, Value, ?WRAPPER) ->
    NewMeta = ?METADICT:append(Key, Value, Bean#bean.meta),
    {ok, wrap(Bean#bean{meta=NewMeta})}.
+
+%% Relations ---------------------------------------------------------
+
+own({eb_bean, Owned}=SubWrapper, ?WRAPPER=Wrapper) when is_record(Owned, bean) ->
+    Subtype = Owned#bean.type,
+    {ok, Wrapper2} = append_meta({own, Subtype}, SubWrapper, Wrapper),
+    {ok, Wrapper2}.
+
+
 %%%===================================================================
 %%% Internal functions
 %%%===================================================================

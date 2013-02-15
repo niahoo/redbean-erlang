@@ -70,12 +70,14 @@ meta_test_() ->
     {ok, Bean5} = Bean4:append_meta(other, other_value),
     [ ?_assertMatch({ok, [value1,value2]}, Bean5:get_meta({aaa,bbb}))
     , ?_assertMatch({ok, valueX}, Bean5:get_meta({ooo,zzz}))
+    , ?_assertMatch(undefined, Bean5:get_meta(nonexistingkey))
     ].
 
 
-% simple_own_test() ->
-%     Book = eb:dispense(book),
-%     Chapter = eb:dispense(chapter),
-%     {ok, Chap2} = Chapter:set(title, "My Title"),
-%     {ok, Book2} = Book:own(Chap2).
+simple_own_test() ->
+    Book = eb:dispense(book),
+    Chapter = eb:dispense(chapter),
+    {ok, Chap2} = Chapter:set(title, "My Title"),
+    {ok, Book2} = Book:own(Chap2),
+    ?assertMatch({ok, [Chap2]}, Book2:get_meta({own, chapter})).
 
