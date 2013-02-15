@@ -79,5 +79,4 @@ simple_own_test() ->
     Chapter = eb:dispense(chapter),
     {ok, Chap2} = Chapter:set(title, "My Title"),
     {ok, Book2} = Book:own(Chap2),
-    ?assertMatch({ok, [Chap2]}, Book2:get_meta({own, chapter})).
-
+    ?assertMatch({ok, [Chap2]}, Book2:get_meta(own)).

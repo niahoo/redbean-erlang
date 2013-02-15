@@ -117,7 +117,7 @@ append_meta(Key, Value, ?WRAPPER) ->
 
 own({eb_bean, Owned}=SubWrapper, Wrapper) when is_record(Owned, bean) ->
     Subtype = Owned#bean.type,
-    {ok, Wrapper2} = append_meta({own, Subtype}, SubWrapper, Wrapper),
+    {ok, Wrapper2} = append_meta(own, SubWrapper, Wrapper),
     {ok, Wrapper2}.
 
 
