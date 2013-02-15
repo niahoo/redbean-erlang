@@ -64,8 +64,8 @@
 -callback widen_column({Table :: binary(),  Column :: binary(), Type :: dbatype()}, State :: term()) ->
     dbareply(ok) | dbaerror().
 
--callback accept_type(CurrentType :: dbatype(), ValueType :: dbatype()) ->
-     true | {false, NewType :: dbatype()}.
+-callback accept_type({CurrentType :: dbatype(), ValueType :: dbatype()}, State :: term()) ->
+     dbareply(true | {false, NewType :: dbatype()}).
 
 -callback update_record({Table :: binary(), KeyVals :: dbarow(), ID :: term()}, State :: term()) ->
     dbareply({ok, NewID :: term()}).

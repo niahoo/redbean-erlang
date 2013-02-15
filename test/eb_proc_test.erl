@@ -104,12 +104,12 @@ interface_test_() ->
 
 
 startapp() ->
-    ok = application:start(erlbean),
+    application:start(erlbean),
     eb:setup(epgsql,?PGTESTCONF),
     started.
 
 
 stopapp(_) ->
     error_logger:tty(false),
-    ok = application:stop(erlbean),
+    application:stop(erlbean),
     error_logger:tty(true).
