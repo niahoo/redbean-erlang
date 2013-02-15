@@ -28,15 +28,6 @@ queries_test_() ->
         {"Adapter should be able to create a table with atoms only, list and binary",
           setup, local, fun startapp/0, fun stopapp/1,
           fun(Pid) ->
-            q(Pid, "DROP TABLE IF EXISTS t_test_create_binary ;"),
-            q(Pid, "DROP TABLE IF EXISTS t_test_create_binary ;"),
-            q(Pid, "DROP TABLE IF EXISTS t_test_create_atom ;"),
-            q(Pid, "DROP TABLE IF EXISTS t_test_create_list ;"),
-            q(Pid, "DROP TABLE IF EXISTS t_test_alter ;"),
-            q(Pid, "DROP TABLE IF EXISTS chapter ;"),
-            q(Pid, "DROP TABLE IF EXISTS mytype ;"),
-            q(Pid, "DROP TABLE IF EXISTS bean ;"),
-            q(Pid, "DROP TABLE IF EXISTS book ;"),
             {inorder ,[
               ?_assertMatch(
                 {ok, _Columns, []},
@@ -155,7 +146,7 @@ queries_test_() ->
         {"Adapter should be able to INSERT values",
           setup, local, fun startapp/0, fun stopapp/1,
           fun(Pid) ->
-              q(Pid,"create table if not exists testint (id serial primary key, col_1 text, col_2 text)"),
+              q(Pid,"CREATE TABLE testint (id serial primary key, col_1 text, col_2 text)"),
             [
               ?_assertMatch(
                 {ok,1},
