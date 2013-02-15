@@ -150,27 +150,28 @@ internals_test_() ->
                         ]}
                 end
             }
-        },
-        {"Set owned beans and store parent should create children tables and"
-         " appropriate columns, and foreign keys",
-            {
-                setup, local,
-                fun startapp/0,
-                fun stopapp/1,
-                fun (started) -> []
-                    % Book = eb:dispense(book),
-                    % ChapOne = eb:proc([{dispense, chapter},{set, title, "Chapter One"}]),
-                    % {ok, Book2} = Bean:own(ChapOne);
-                    % {inorder, [
-                    %     ?_assertEqual(false, eb_adapter:table_exists(dba(), book)),
-                    %     ?_assertEqual(false, eb_adapter:table_exists(dba(), chapter)),
-                    %     ?_assertMatch({ok, SomeBean},eb:store(Book2)),
-                    %     ?_assertMatch({not_found, {eb_bean, SomeBean}}, eb:load(mytype,-1)),
-                    %     ?_assertEqual(false, BeanL:tainted())
-                    %     ]}
-                end
-            }
         }
+        % ,
+        % {"Set owned beans and store parent should create children tables and"
+        %  " appropriate columns, and foreign keys",
+        %     {
+        %         setup, spawn,
+        %         fun startapp/0,
+        %         fun stopapp/1,
+        %         fun (started) ->
+        %             Book = eb:dispense(book),
+        %             ChapOne = eb:proc([{dispense, chapter},{set, title, "Chapter One"}]),
+        %             {ok, Book2} = Book:own(ChapOne),
+        %             {inorder,
+        %                 [ ?_assertEqual(false, eb_adapter:table_exists(dba(), book))
+        %                 , ?_assertEqual(false, eb_adapter:table_exists(dba(), chapter))
+        %                 , ?_assertMatch({ok, SomeBean},eb:store(Book2))
+        %                 , ?_assertEqual(true, eb_adapter:table_exists(dba(), book))
+        %                 , ?_assertEqual(true, eb_adapter:table_exists(dba(), chapter))
+        %                 ]}
+        %         end
+        %     }
+        % }
     ].
 
 

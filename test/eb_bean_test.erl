@@ -4,11 +4,6 @@
 -include_lib("erlbean/include/erlbean.hrl").
 
 
-create_test() ->
-    ?assertMatch({eb_bean, #bean{type=testb, tainted=true}}, eb_bean:new(testb)).
-
-
-
 getset_test() ->
     Bean = eb_bean:new(testb),
     {ok, Bean2} = Bean:set(mykey,<<"My Value">>),
@@ -65,22 +60,22 @@ id_shortcut_test() ->
     ?assertMatch(undefined, Bean:id()),
     ?assertMatch(abcdef, Bean2:id()).
 
+meta_test_() ->
+    Bean = eb:dispense(bean),
+    {ok, Bean2} = Bean:set_meta({aaa, bbb}, [value1]),
+    {ok, Bean3} = Bean2:set_meta([
+            {{ooo, zzz}, valueX}
+        ]),
+    {ok, Bean4} = Bean3:append_meta({aaa, bbb}, value2),
+    {ok, Bean5} = Bean4:append_meta(other, other_value),
+    [ ?_assertMatch({ok, [value1,value2]}, Bean5:get_meta({aaa,bbb}))
+    , ?_assertMatch({ok, valueX}, Bean5:get_meta({ooo,zzz}))
+    ].
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+% simple_own_test() ->
+%     Book = eb:dispense(book),
+%     Chapter = eb:dispense(chapter),
+%     {ok, Chap2} = Chapter:set(title, "My Title"),
+%     {ok, Book2} = Book:own(Chap2).
 
