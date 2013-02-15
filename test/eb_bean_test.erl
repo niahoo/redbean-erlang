@@ -64,3 +64,23 @@ id_shortcut_test() ->
     {ok, Bean2} = Bean:set(id,abcdef),
     ?assertMatch(undefined, Bean:id()),
     ?assertMatch(abcdef, Bean2:id()).
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

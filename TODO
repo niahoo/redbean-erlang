@@ -13,3 +13,9 @@ donc on a pris parti de les passer en binary à l'adapter
 - En interne, ne pas utiliser les appels de la forme Bean:function()
 mais utiliser eb_bean:function(Bean) à la place, pour permettre au
 dialyzer de faire son boulot
+
+- Permettre d'ajouter un paramètre de plus quand on fait un 'set' sur
+un bean afin de préciser le type de données qu'il faut sauvergarder en
+base de données. ça permet au fluid mode de créer les colonnes avec ce
+type plutot que d'appeler scan_type et donc de stocker des chaines
+binaires dans des champs text

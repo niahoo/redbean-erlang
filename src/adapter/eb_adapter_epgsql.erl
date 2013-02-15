@@ -84,7 +84,7 @@ check({column, Name}, C) ->
     {reply, Reply, C}.
 
 create_table(Table, C) ->
-    Reply = case q(C, ["create table ", Table, " (id SERIAL PRIMARY KEY);"])
+    Reply = case q(C, ["CREATE TABLE ", Table, " (id SERIAL PRIMARY KEY);"])
         of {ok, _Columns, []} -> ok
          ; Any -> Any
     end,
@@ -92,22 +92,22 @@ create_table(Table, C) ->
 
 get_tables(C) ->
     {ok, _Columns, Tables} = q(C,
-        "select table_name from information_schema.tables
-        where table_schema = 'public'"),
+        "SELECT table_name FROM information_schema.tables
+        WHERE table_schema = 'public';"),
     {reply, {ok, [T || {T} <- Tables]}, C}.
 
 
 get_columns(Table, C) ->
     {ok, _Cols, Columns} = q(C,
-        ["select column_name, data_type "
-        "from information_schema.columns where table_name = ", pquote(Table)]),
+        ["SELECT column_name, data_type "
+        "FROM information_schema.columns WHERE table_name = ", pquote(Table), ";"]),
     TablesTypesStandard = [{ColName,pg2dbatype(Type)} || {ColName, Type} <- Columns],
     {reply, {ok, TablesTypesStandard}, C}.
 
 
 add_column({Table, Column, Type}, C) ->
     PgType = dba2pgtype(Type),
-    Reply = case q(C, ["alter table ", Table, " add ", Column," ", PgType])
+    Reply = case q(C, ["alter table ", Table, " add ", Column," ", PgType, ";"])
         of {ok, [], []} -> ok
          %% input data must be ok
          %% ; {error, #error{code = <<"42P01">>}} -> {error, {no_table, Table}}
@@ -117,7 +117,7 @@ add_column({Table, Column, Type}, C) ->
 
 widen_column({Table, Column, NewType}, C) ->
     PgType = dba2pgtype(NewType),
-    Reply = case q(C, ["alter table ", Table, " alter column ", Column," TYPE ", PgType])
+    Reply = case q(C, ["alter table ", Table, " alter column ", Column," TYPE ", PgType, ";"])
         of {ok, [], []} -> ok
          %% input data must be ok
          %% ; {error, #error{code = <<"42P01">>}} -> {error, {no_table, Table}}
@@ -173,15 +173,15 @@ insert_record(Table, KeyVals, C) ->
             {X+1, [", $", integer_to_list(X+1)|Dolls]}
         end, {0,[]},Vals), %% ici Vals n'est utilisé que pour la longueur de la liste
 
-    Q = ["insert into ", Table, " ( id " , Columns, " ) VALUES "
-         "( DEFAULT ", Markers, " ) returning id"],
+    Q = ["INSERT INTO ", Table, " ( id " , Columns, " ) VALUES "
+         "( DEFAULT ", Markers, " ) RETURNING id;"],
     {ok, _, _, [{ID}]} = q(C,Q, lists:reverse(Vals)),
     {reply, {ok, ID}, C}.
 
 
 select_record(#rsq{table=Table,props=PS}, C) ->
     {WhereSQL, Bindings} = build_match_clause(PS),
-    Q = ["select * from ", Table, WhereSQL],
+    Q = ["SELECT * FROM ", Table, WhereSQL, ";"],
     Reply = case q(C,Q, Bindings)
         of {ok, ColumnsInfo, Rows} ->
             %% On a récupéré des rows, on doit renvoyer une proplist

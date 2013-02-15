@@ -28,17 +28,19 @@ queries_test_() ->
         {"Adapter should be able to create a table with atoms only, list and binary",
           setup, local, fun startapp/0, fun stopapp/1,
           fun(Pid) ->
-            q(Pid, "drop table IF EXISTS t_test_create_binary ;"),
-            q(Pid, "drop table IF EXISTS t_test_create_binary ;"),
-            q(Pid, "drop table IF EXISTS t_test_create_atom ;"),
-            q(Pid, "drop table IF EXISTS t_test_create_list ;"),
-            q(Pid, "drop table IF EXISTS t_test_alter ;"),
-            q(Pid, "drop table IF EXISTS mytype ;"),
-            q(Pid, "drop table IF EXISTS bean ;"),
+            q(Pid, "DROP TABLE IF EXISTS t_test_create_binary ;"),
+            q(Pid, "DROP TABLE IF EXISTS t_test_create_binary ;"),
+            q(Pid, "DROP TABLE IF EXISTS t_test_create_atom ;"),
+            q(Pid, "DROP TABLE IF EXISTS t_test_create_list ;"),
+            q(Pid, "DROP TABLE IF EXISTS t_test_alter ;"),
+            q(Pid, "DROP TABLE IF EXISTS chapter ;"),
+            q(Pid, "DROP TABLE IF EXISTS mytype ;"),
+            q(Pid, "DROP TABLE IF EXISTS bean ;"),
+            q(Pid, "DROP TABLE IF EXISTS book ;"),
             {inorder ,[
               ?_assertMatch(
                 {ok, _Columns, []},
-                q(Pid, "select table_name from information_schema.tables where table_schema = 'public';")
+                q(Pid, "SELECT table_name FROM information_schema.tables WHERE table_schema = 'public';")
               ),
               ?_assertMatch(
                 ok,
@@ -62,15 +64,15 @@ queries_test_() ->
               ?_assertMatch({error, {bad_table_name, _}}, eb_adapter:create_table(Pid, 'noUPPERCASEallowed')),
               ?_assertMatch(
                 {ok, _Columns, [{<<"t_test_create_atom">>},{<<"t_test_create_binary">>},{<<"t_test_create_list_numbers_123">>}]},
-                q(Pid, "select table_name from information_schema.tables where table_schema = 'public' order by table_name;")
+                q(Pid, "SELECT table_name FROM information_schema.tables WHERE table_schema = 'public' order by table_name;")
               ),
               % ?_assertMatch( %% WRONG TABLE NAME
               %   {error, {bad_table_name, Name}},
               %   eb_adapter:create_table(Pid, "t_te'st_create_list")
               % ),
-              ?_assertMatch(?PG_EMPTY_RET, q(Pid, "drop table t_test_create_binary;")),
-              ?_assertMatch(?PG_EMPTY_RET, q(Pid, "drop table t_test_create_atom;")),
-              ?_assertMatch(?PG_EMPTY_RET, q(Pid, "drop table t_test_create_list_numbers_123;"))
+              ?_assertMatch(?PG_EMPTY_RET, q(Pid, "DROP TABLE t_test_create_binary;")),
+              ?_assertMatch(?PG_EMPTY_RET, q(Pid, "DROP TABLE t_test_create_atom;")),
+              ?_assertMatch(?PG_EMPTY_RET, q(Pid, "DROP TABLE t_test_create_list_numbers_123;"))
             ]}
           end
         },
@@ -100,14 +102,14 @@ queries_test_() ->
             Pid
           end,
           fun (Pid) ->
-            q(Pid, "drop table if exists t_test_alter;"),
+            q(Pid, "DROP TABLE if exists t_test_alter;"),
             stopapp(Pid)
           end,
           fun(Pid) ->
             {inorder, [
               ?_assertMatch(
                 {ok, _Columns, []},
-                q(Pid, "select column_name, data_type from information_schema.columns where table_name='t_test_alter'")
+                q(Pid, "SELECT column_name, data_type FROM information_schema.columns WHERE table_name='t_test_alter'")
               ),
               %% ADD COLUMN
               ?_assertMatch(false, eb_adapter:column_exists(Pid, "t_test_alter", "eterm123")),
@@ -144,9 +146,9 @@ queries_test_() ->
               %% CHECK COLUMNS
               ?_assertMatch(
                 {ok, _Columns, [{<<"eterm123">>,<<"text">>},{<<"id">>, <<"integer">>}]},
-                q(Pid, "select column_name, data_type from information_schema.columns where table_name='t_test_alter'")
+                q(Pid, "SELECT column_name, data_type FROM information_schema.columns WHERE table_name='t_test_alter'")
               )
-              % , ?_assertMatch(?PG_EMPTY_RET, q(Pid, "drop table t_test_alter;"))
+              % , ?_assertMatch(?PG_EMPTY_RET, q(Pid, "DROP TABLE t_test_alter;"))
             ]}
           end
         },
@@ -158,11 +160,11 @@ queries_test_() ->
               ?_assertMatch(
                 {ok,1},
                 eb_adapter:exec(Pid,
-                  "Insert into testint (id, col_1, col_2) values (DEFAULT, $1, $2)",
+                  "INSERT INTO testint (id, col_1, col_2) VALUES (DEFAULT, $1, $2)",
                   [123, "yo man"]
                 )
               ),
-              ?_assertMatch({ok,[],[]}, q(Pid, "drop table testint"))
+              ?_assertMatch({ok,[],[]}, q(Pid, "DROP TABLE testint"))
             ]
           end
         }
