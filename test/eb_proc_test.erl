@@ -82,6 +82,23 @@ interface_test_() ->
                 ]
             end
         }
+       ,{"Test (un)tainting beans",
+            setup, local, fun startapp/0, fun stopapp/1,
+            fun(started) ->
+                {ok, Untainted} = eb:proc([
+                        {dispense, mytype},
+                        untaint
+                    ]),
+                {ok, Tainted} = eb:proc([
+                        {dispense, mytype},
+                        untaint,
+                        taint
+                    ]),
+                [ ?_assertEqual(false, Untainted:tainted())
+                , ?_assertEqual(true, Tainted:tainted())
+                ]
+            end
+        }
   ]}.
 
 

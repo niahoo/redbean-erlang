@@ -15,13 +15,19 @@ is_bean_test() ->
     Bean = eb_bean:new(testb),
     ?assert(Bean:is_bean()).
 
-set_make_tainted_test() ->
+tainted_when_set_test() ->
     Bean = eb:dispense(testb),
     {ok, Bean2} = Bean:set([{aaa,"aaa"},{bbb,"bbb"}]),
     Bean2_ut = Bean2:untaint(),
     ?assertEqual(false, Bean2_ut:tainted()),
     {ok, Bean3} = Bean2_ut:set([{aaa,"zzz"},{xxx,"yyy"}]),
     ?assertEqual(true, Bean3:tainted()).
+
+taint_utility_test() ->
+    Tainted = eb:dispense(testb),
+    Untainted = Tainted:untaint(),
+    Retainted = Untainted:taint(),
+    ?assertEqual(true, Retainted:tainted()).
 
 gettype_test() ->
     Bean = eb_bean:new(testb),

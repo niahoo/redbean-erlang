@@ -15,7 +15,7 @@
 -export([start_link/4]).
 -export([get_adapter/1]).
 -export([store/1]).
--export([load/2]).
+-export([load/2,find/3]).
 
 
 %% gen_server callbacks
@@ -73,10 +73,9 @@ store_bean(Bean) ->
 %% l'utilisateur fait n'importe quoi avec sa base de données
 load(Type, ID) ->
     RecordQuery = #rsq{table=eb_utils:to_binary(Type), props=[{<<"id">>, ID}]},
-    % @todo transformer les row en bean
-    PropList = gen_server:call(?DB, {select_record, RecordQuery}),
+    RecordSet = gen_server:call(?DB, {select_record, RecordQuery}),
     Bean = eb_bean:new(Type),
-    case PropList
+    case RecordSet
         of {ok, 1, [Row]} ->
                 {ok, Bean2} = Bean:set(Row),
                 {ok, Bean2:untaint()}
@@ -90,6 +89,18 @@ load(Type, ID) ->
                 Any
     end.
 
+%% Ici on recherche des beans. Comme l'utilisateur peut insérer du SQL
+%% qui vient après une where clause, i.e ORDER BY, LIMIT, GROUP BY, on
+%% passe obligatoirement une props vide dans la #rsq
+find(Type, AddSQL, Bindings) ->
+    RecordQuery = #rsq{table=eb_utils:to_binary(Type), props=[], wheresql=AddSQL, bindings=Bindings},
+    RecordSet = gen_server:call(?DB, {select_record, RecordQuery}),
+    case RecordSet
+        of {ok, _Count, Rows} ->
+            Beans = convert_to_beans(Type, Rows),
+            {ok, Beans}
+         ; Any -> Any
+    end.
 
 %% Other -------------------------------------------------------------
 
@@ -206,4 +217,17 @@ code_change(_OldVsn, State, _Extra) ->
 % wrap(#bean{}=B) -> {eb_bean, B}.
 
 fmode_module(fluid) -> eb_db_fluid.
+
+convert_to_beans(Type, Rows) ->
+    convert_to_beans(Type, Rows, []).
+
+convert_to_beans(_Type, [], Acc) ->
+    %% on renverse la liste au cas où l'utilisateur a soumis une
+    %% clause ORDER BY
+    lists:reverse(Acc);
+
+convert_to_beans(Type, [Row|Rows], Acc) when is_atom(Type) ->
+    {ok, Bean} = eb:proc([{dispense, Type},{set, Row}, untaint]),
+    convert_to_beans(Type, Rows, [Bean|Acc]).
+
 

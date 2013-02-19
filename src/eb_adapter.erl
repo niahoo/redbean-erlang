@@ -24,10 +24,6 @@
      terminate/2,
      code_change/3]).
 
--type dbareply(Reply) :: {reply, Reply, NewState :: term()}.
--type dbaerror() :: dbareply({error, Reason :: term()}).
-
-
 %%%===================================================================
 %%% eb_adapter Behaviour definition
 %%%===================================================================

@@ -76,6 +76,14 @@ eval(store, [ABean|_Stack]) ->
     Bean = unok(ABean),
     {ok, _Bean2} = eb_db:store(Bean);
 
+eval(untaint, [ABean|_Stack]) ->
+    Bean = unok(ABean),
+    {ok, Bean:untaint()};
+
+eval(taint, [ABean|_Stack]) ->
+    Bean = unok(ABean),
+    {ok, Bean:taint()};
+
 eval(Step, _Stack) -> throw({error, {unknown_proc, Step}}).
 
 

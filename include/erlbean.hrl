@@ -8,9 +8,13 @@
 
 %% recordset Query
 -record(rsq, {  table :: binary(),
+                wheresql = "" :: string(),
+                bindings = [] :: [{Key :: atom(), Value :: term()}],
                 props = [] :: [{Column :: binary(), Value :: term()}]
              }).
 
+-type dbareply(Reply) :: {reply, Reply, NewState :: term()}.
+-type dbaerror() :: dbareply({error, Reason :: term()}).
 -type dbatype() :: integer | double | binary | text.
 -type dbarow() :: [{Column :: binary(), Value :: term()}].
 -type dbarows() :: [dbarow()].

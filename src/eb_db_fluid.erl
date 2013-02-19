@@ -44,7 +44,7 @@ handle({select_record, RecordQuery}, _From, State) ->
     %% ici en mode fluide, on va masquer l'erreur de table inexistante
     %% en renvoyant simplement un recordcount 0
     Reply = case Rs
-        of {error, {no_table, Table}} -> {ok, 0, []}
+        of {error, {no_table, _Table}} -> {ok, 0, []}
          ; Any -> Any
     end,
     {reply, Reply, State};

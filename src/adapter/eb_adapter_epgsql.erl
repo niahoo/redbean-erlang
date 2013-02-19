@@ -179,8 +179,8 @@ insert_record(Table, KeyVals, C) ->
     {reply, {ok, ID}, C}.
 
 
-select_record(#rsq{table=Table,props=PS}, C) ->
-    {WhereSQL, Bindings} = build_match_clause(PS),
+select_record(#rsq{table=Table}=RSQ, C) ->
+    {WhereSQL, Bindings} = build_where_clause(RSQ),
     Q = ["SELECT * FROM ", Table, WhereSQL, ";"],
     Reply = case q(C,Q, Bindings)
         of {ok, ColumnsInfo, Rows} ->
@@ -202,6 +202,10 @@ q(C, Query) ->
     Rep = pgsql:equery(C, Query),
     tty_db_if_error(Rep, Query),
     Rep.
+
+q(C, Query, []) ->
+    %% Le drier n'accepte pas les listes vides
+    q(C, Query);
 
 q(C, Query, Bindings) ->
     % ?DBGTYPE(Query),
@@ -226,17 +230,31 @@ tty_db_if_error(_,_) -> ok.
 
 %% SELECT FROM WHERE -------------------------------------------------
 
-build_match_clause([]) ->
+build_where_clause(#rsq{wheresql=WhereSQL,bindings=Bindings,props=Props}) ->
+    %% On calcule à partir de quel chiffre les bindings des props vont
+    %% commencer : si on a 2 bindings, les bindings des props doivent
+    %% commencer à $3
+    PropsMarkStart = length(Bindings) + 1,
+    WhereKey = case WhereSQL
+        of "" -> " WHERE True "
+         ; _  -> " WHERE "
+    end,
+    {PropsWhereSQL, PropsBindings} = props_to_WHERE_statements(Props, PropsMarkStart),
+    FinalSQL = [WhereKey," ",WhereSQL," ",PropsWhereSQL],
+    FinalBindings = Bindings ++ PropsBindings,
+    {FinalSQL, FinalBindings}.
+
+props_to_WHERE_statements([], _PMS) ->
     {"", []};
-build_match_clause(Props) ->
-    build_match_clause(Props, [], [], 1).
+props_to_WHERE_statements(Props, PropsMarkStart) ->
+    props_to_WHERE_statements(Props, [], [], PropsMarkStart).
 
-build_match_clause([], SqlAcc, Bindings, _) ->
-    {[" WHERE True " | SqlAcc], Bindings};
+props_to_WHERE_statements([], SqlAcc, Bindings, _) ->
+    {SqlAcc, Bindings};
 
-build_match_clause([{Key,Val}|Props], SqlAcc, Bindings, IMark) ->
+props_to_WHERE_statements([{Key,Val}|Props], SqlAcc, Bindings, IMark) ->
     SqlPart = [" AND ", Key, " = $", integer_to_list(IMark), " "],
-    build_match_clause(Props, [SqlPart|SqlAcc], [Val|Bindings], IMark+1).
+    props_to_WHERE_statements(Props, [SqlPart|SqlAcc], [Val|Bindings], IMark+1).
 
 
 %% format recordset --------------------------------------------------

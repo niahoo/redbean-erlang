@@ -10,7 +10,7 @@
 -export([setup/2,setup/3,setup/4]).
 -export([proc/1]).
 -export([dispense/1]).
--export([load/2]).
+-export([load/2,find/1,find/2,find/3]).
 -export([store/1]).
 -export([get_eb_db/0]).
 
@@ -31,11 +31,6 @@ ship() ->
     {ok, Ship2} = Ship:set([{name, "My Hobocab"},{itemtype_id, 34}]),
     {ok, Ship3} = eb:store(Ship2),
     Ship3.
-
-
-
-
-
 
 
 %% Setup -------------------------------------------------------------
@@ -60,6 +55,10 @@ dispense(Type) -> eb_bean:new(Type).
 store(Wrapper) -> eb_db:store(Wrapper).
 
 load(Type, ID) -> eb_db:load(Type, ID).
+
+find(Type) -> find(Type, "", []).
+find(Type, AddSQL) -> find(Type, AddSQL, []).
+find(Type, AddSQL, Bindings) -> eb_db:find(Type, AddSQL, Bindings).
 
 %% Procs -------------------------------------------------------------
 

@@ -24,7 +24,7 @@
 -export([id/1]).
 -export([map/2,fold/3]).
 -export([get/2,set/2,set/3,export/1,'export/id'/1]).
--export([tainted/1,untaint/1]).
+-export([tainted/1,untaint/1,taint/1]).
 -export([set_meta/3,set_meta/2,get_meta/2,append_meta/3]).
 -export([own/2]).
 
@@ -73,6 +73,7 @@ export(?WRAPPER) ->
 
 tainted(?WRAPPER) -> Bean#bean.tainted.
 
+taint(?WRAPPER) -> wrap(Bean#bean{tainted=true}).
 untaint(?WRAPPER) -> wrap(Bean#bean{tainted=false}).
 
 type(?WRAPPER) -> Bean#bean.type.
@@ -116,7 +117,6 @@ append_meta(Key, Value, ?WRAPPER) ->
 %% Relations ---------------------------------------------------------
 
 own({eb_bean, Owned}=SubWrapper, Wrapper) when is_record(Owned, bean) ->
-    Subtype = Owned#bean.type,
     {ok, Wrapper2} = append_meta(own, SubWrapper, Wrapper),
     {ok, Wrapper2}.
 

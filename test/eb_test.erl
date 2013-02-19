@@ -14,7 +14,7 @@ get_eb_db_test_() ->
 
 
 startapp() ->
-    ok = application:start(erlbean),
+    application:start(erlbean),
     eb:setup(epgsql,?PGTESTCONF),
     started.
 
