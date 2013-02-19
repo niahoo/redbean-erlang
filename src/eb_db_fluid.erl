@@ -40,7 +40,13 @@ handle({store, Bean}, _From, State) ->
 
 handle({select_record, RecordQuery}, _From, State) ->
     DBA = State#ebdb.dba,
-    Reply = eb_adapter:select_record(DBA, RecordQuery),
+    Rs = eb_adapter:select_record(DBA, RecordQuery),
+    %% ici en mode fluide, on va masquer l'erreur de table inexistante
+    %% en renvoyant simplement un recordcount 0
+    Reply = case Rs
+        of {error, {no_table, Table}} -> {ok, 0, []}
+         ; Any -> Any
+    end,
     {reply, Reply, State};
 
 handle(_Request, _From, State) ->

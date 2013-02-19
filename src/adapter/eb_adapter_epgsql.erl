@@ -187,6 +187,8 @@ select_record(#rsq{table=Table,props=PS}, C) ->
             %% On a récupéré des rows, on doit renvoyer une proplist
             %%                   [{colname, Value}]
             {ok, length(Rows), read_rows(ColumnsInfo, Rows)}
+         ; {error, #error{code = <<"42P01">>}} ->
+            {error, {no_table, Table}}
          ; Any -> Any
     end,
     {reply, Reply, C}.

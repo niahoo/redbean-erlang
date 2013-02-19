@@ -182,6 +182,9 @@ update_record(Pid, Table, KeyVals, ID) ->
     gen_server:call(Pid, {update_record, {Table, KeyVals, ID}}).
 
 select_record(Pid, #rsq{table=Table}=RecordQuery) ->
+    %% l'adapter spécifique peut renvoyer une erreur genre no_table
+    %% ici on check le nom juste pour s'assurer qu'on envoie un nom
+    %% valide et que l'erreur ne vient pas du code
     true = check(Pid, {table, Table}),
     gen_server:call(Pid, {select_record, RecordQuery}).
 
