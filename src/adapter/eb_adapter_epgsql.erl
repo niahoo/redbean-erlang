@@ -213,23 +213,6 @@ select_row({Query, Bindings}, C) ->
     end,
     {reply, Reply, C}.
 
-% select_record(#rsq{table=Table, selectsql=SELECT}=RSQ, C) ->
-%     {WhereSQL, Bindings} = build_where_clause(RSQ),
-%     Q = case SELECT
-%         of undefined -> ["SELECT * FROM ", Table, WhereSQL, ";"]
-%          ; _  -> [SELECT, "  ", WhereSQL, ";"]
-%     end,
-%     Reply = case q(C,Q, Bindings)
-%         of {ok, ColumnsInfo, Rows} ->
-%             %% On a récupéré des rows, on doit renvoyer une proplist
-%             %%                   [{colname, Value}]
-%             {ok, length(Rows), read_rows(ColumnsInfo, Rows)}
-%          ; {error, #error{code = <<"42P01">>}} ->
-%             {error, {no_table, Table}}
-%          ; Any -> Any
-%     end,
-%     {reply, Reply, C}.
-
 %%%===================================================================
 %%% Internal functions
 %%%===================================================================
@@ -265,21 +248,7 @@ tty_db_if_error({error, #error{severity=S, code=C, message=M, extra=X}}, Q) ->
 
 tty_db_if_error(_,_) -> ok.
 
-%% SELECT FROM WHERE -------------------------------------------------
-
-% build_where_clause(#rsq{wheresql=WhereSQL,bindings=Bindings,props=Props}) ->
-%     %% On calcule à partir de quel chiffre les bindings des props vont
-%     %% commencer : si on a 2 bindings, les bindings des props doivent
-%     %% commencer à $3
-%     PropsMarkStart = length(Bindings) + 1,
-%     WhereKey = case WhereSQL
-%         of "" -> " WHERE True "
-%          ; _  -> " WHERE "
-%     end,
-%     {PropsWhereSQL, PropsBindings} = props_to_WHERE_statements(Props, PropsMarkStart),
-%     FinalSQL = [WhereKey," ",WhereSQL," ",PropsWhereSQL],
-%     FinalBindings = Bindings ++ PropsBindings,
-%     {FinalSQL, FinalBindings}.
+%% Proplist to Where Clause ------------------------------------------
 
 props_to_WHERE_statements(Props) ->
    %% start $x bindings from 1
