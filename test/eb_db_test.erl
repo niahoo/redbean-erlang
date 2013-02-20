@@ -194,7 +194,24 @@ internals_test_() ->
                         ]}
                 end
             }
-        }
+        },
+          {"Test of get_col, get_rows",
+            setup, local, fun startapp/0, fun stopapp/1,
+            fun(_) ->
+                eb:proc([{dispense, coltest}, {set, a, 111}, store]),
+                eb:proc([{dispense, coltest}, {set, a, 222}, store]),
+                eb:proc([{dispense, coltest}, {set, a, 333}, store]),
+                [ ?_assertMatch({ok, [111,222]}, eb:get_col("SELECT a FROM qtestcol ORDER BY a"))
+                , ?_assertMatch({ok, [2,3]}, eb:get_col("SELECT id FROM qtestcol WHERE a > $1 ORDER BY id", [200]))
+                , ?_assertMatch(
+                    {ok, [ [{id, 2},{a, 222}]
+                         , [{id, 3},{a, 333}]
+                         ]
+                    },
+                    eb:get_rows("SELECT * FROM qtestcol WHERE a > $1 ORDER BY id", [200]))
+                ]
+            end
+          }
     ].
 
 

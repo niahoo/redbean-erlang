@@ -25,8 +25,11 @@ delete_all_test_() ->
             q(Pid, "DROP TABLE IF EXISTS t_test_create_atom ;"),
             q(Pid, "DROP TABLE IF EXISTS t_test_create_list ;"),
             q(Pid, "DROP TABLE IF EXISTS t_test_alter ;"),
+            q(Pid, "DROP TABLE IF EXISTS colqtest ;"),
+            q(Pid, "DROP TABLE IF EXISTS coltest ;"),
             q(Pid, "DROP TABLE IF EXISTS chapter ;"),
             q(Pid, "DROP TABLE IF EXISTS mytype ;"),
+            q(Pid, "DROP TABLE IF EXISTS qtest ;"),
             q(Pid, "DROP TABLE IF EXISTS bean ;"),
             q(Pid, "DROP TABLE IF EXISTS book ;"),
 

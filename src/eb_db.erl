@@ -16,6 +16,7 @@
 -export([get_adapter/1]).
 -export([store/1]).
 -export([load/2,find/3]).
+-export([get_col/2]).
 
 
 %% gen_server callbacks
@@ -54,6 +55,35 @@ start_link(Adapter, Name, Conf, FMode) ->
     {ok, _Pid} = gen_server:start_link({local, Name}, ?MODULE, [Adapter, Conf, FMode], []).
 
 
+%% Working with Rows -------------------------------------------------
+
+%% With gel_col, eb_db assumes that the user selected only 1 columns
+%% so the first column is picked if there are more
+get_col(Query, Bindings) ->
+    RecordSet = simple_select(Query, Bindings),
+    case RecordSet
+        of {ok, _X, Rows} ->
+            Column = [V || [{K,V}|Row] <- Rows ],
+            {ok, Column}
+         ; Any -> Any
+    end.
+
+get_rows(Query, Bindings) ->
+    RecordSet = simple_select(Query, Bindings),
+    case RecordSet
+        of {ok, _X, Rows} -> {ok, Rows}
+         ; Any -> Any
+    end.
+
+simple_select(Query, Bindings) ->
+    %% comme on passe une requête complète, on envoie tout dans la
+    %% where clause, comme ça l'API a définir reste simple pour des
+    %% adapters NoSQL par exemple
+    %% On regle le selectsql sur une liste vide pour qu'il ne soit pas
+    %% remplacé par le select par défaut. Vu que Query contient
+    %% logiquement une instruction select
+    RecordQuery = #rsq{selectsql=[], wheresql=Query, bindings=Bindings},
+    _RecordSet = gen_server:call(?DB, {select_record, RecordQuery}).
 
 %% Working with beans ------------------------------------------------
 
@@ -67,9 +97,9 @@ store_bean(Bean) ->
     {ok, NewBean} = gen_server:call(?DB, {store,Bean}),
     {ok, NewBean}.
 
-%% La fonction load doit renvoyer un bean et un seul bin, car l'ID est
-%% censé être unique. On check donc qu'on ne récupère qu'un seul bean
-%% de l'adapter. L'adpter pourrait en renvoyer plusieurs si
+%% La fonction load doit renvoyer un bean et un seul bean, car l'ID
+%% est censé être unique. On check donc qu'on ne récupère qu'un seul
+%% bean de l'adapter. L'adpter pourrait en renvoyer plusieurs si
 %% l'utilisateur fait n'importe quoi avec sa base de données
 load(Type, ID) ->
     RecordQuery = #rsq{table=eb_utils:to_binary(Type), props=[{<<"id">>, ID}]},

@@ -68,7 +68,7 @@ pquote(X) ->
 %% ===================================================================
 
 check({table, Name}, C) ->
-    {ok, Re} = re:compile("^[a-z_][0-9a-z_]{1,62}$"),
+    {ok, Re} = re:compile("^[a-z_][0-9a-z_]{0,62}$"),
     Reply = case re:run(Name,Re)
         of {match, _} -> true
          ; _ -> false
@@ -76,7 +76,7 @@ check({table, Name}, C) ->
     {reply, Reply, C};
 
 check({column, Name}, C) ->
-    {ok, Re} = re:compile("^[a-z_][0-9a-z_]{1,62}$"), %% @todo regarder les restrictions pour les colonnes
+    {ok, Re} = re:compile("^[a-z_][0-9a-z_]{0,62}$"), %% @todo regarder les restrictions pour les colonnes
     Reply = case re:run(Name,Re)
         of {match, _} -> true
          ; _ -> false
@@ -179,9 +179,12 @@ insert_record(Table, KeyVals, C) ->
     {reply, {ok, ID}, C}.
 
 
-select_record(#rsq{table=Table}=RSQ, C) ->
+select_record(#rsq{table=Table, selectsql=SELECT}=RSQ, C) ->
     {WhereSQL, Bindings} = build_where_clause(RSQ),
-    Q = ["SELECT * FROM ", Table, WhereSQL, ";"],
+    Q = case SELECT
+        of undefined -> ["SELECT * FROM ", Table, WhereSQL, ";"]
+         ; _  -> [SELECT, "  ", WhereSQL, ";"]
+    end,
     Reply = case q(C,Q, Bindings)
         of {ok, ColumnsInfo, Rows} ->
             %% On a récupéré des rows, on doit renvoyer une proplist

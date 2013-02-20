@@ -8,7 +8,8 @@
 
 %% recordset Query
 -record(rsq, {  table :: binary(),
-                wheresql = "" :: string(),
+                selectsql :: string(),
+                wheresql  :: string(),
                 bindings = [] :: [{Key :: atom(), Value :: term()}],
                 props = [] :: [{Column :: binary(), Value :: term()}]
              }).

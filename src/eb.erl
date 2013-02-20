@@ -2,7 +2,6 @@
 
 -include_lib("erlbean/include/erlbean.hrl").
 
--export([t/0]).
 -export([db1/0,db2/0,ship/0]).
 
 
@@ -12,15 +11,14 @@
 -export([dispense/1]).
 -export([load/2,find/1,find/2,find/3]).
 -export([store/1]).
+-export([exec/1,exec/2]).
+-export([get_col/1,get_col/2]).
 -export([get_eb_db/0]).
 
 %% TEST --------------------------------------------------------------
 
 -define(TESTCONF, [{user,"test"},{password,"test"},{host,"localhost"},{opts,[{database,"test"}]}]).
 
-t() ->
-    catch db1(),
-    eb_adapter_epgsql:exec(eb:get_eb_db(), "select 3 + 5").
 
 db1() -> eb:setup(epgsql,?TESTCONF).
 db2() -> eb:setup(epgsql,other_eb_db, ?TESTCONF).
@@ -46,6 +44,22 @@ setup(Adapter, Name, Conf) ->
 
 setup(Adapter, Name, Conf, FMode) when is_atom(Adapter) ->
     erlbean_sup:start_toolkit(Adapter, Name, Conf, FMode).
+
+%% Queries -----------------------------------------------------------
+%% Works directly with the adapter
+
+%% exec relays the query directly to the adapter, the return format is
+%% not normalized
+exec(Query) -> exec(Query,[]).
+
+exec(Query, Bindings) ->
+    eb_adapter:exec(dba(), Query, Bindings).
+
+get_col(Query) -> get_col(Query,[]).
+
+get_col(Query, Bindings) ->
+    eb_db:get_col(Query, Bindings).
+
 
 %% Beans -------------------------------------------------------------
 
@@ -76,3 +90,5 @@ get_eb_db() -> eb_db:get_eb_db().
 %% INTERNAL
 %% ===================================================================
 
+db() -> eb_db:get_eb_db().
+dba() -> eb_db:get_adapter(db()).
