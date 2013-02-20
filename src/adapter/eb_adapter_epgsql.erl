@@ -17,7 +17,7 @@
          add_column/2,
          widen_column/2,
          update_record/2,
-         select_record/2,
+         select_record/2,select_match/2,select_row/2,
          accept_type/2,
          close/1
         ]).
@@ -178,23 +178,57 @@ insert_record(Table, KeyVals, C) ->
     {ok, _, _, [{ID}]} = q(C,Q, lists:reverse(Vals)),
     {reply, {ok, ID}, C}.
 
+%% Select full records from matching proplist ------------------------
 
-select_record(#rsq{table=Table, selectsql=SELECT}=RSQ, C) ->
-    {WhereSQL, Bindings} = build_where_clause(RSQ),
-    Q = case SELECT
-        of undefined -> ["SELECT * FROM ", Table, WhereSQL, ";"]
-         ; _  -> [SELECT, "  ", WhereSQL, ";"]
-    end,
-    Reply = case q(C,Q, Bindings)
+select_match({Table, []}, C) ->
+    %% Select the full table
+    select_record({Table, [], []}, C);
+
+select_match({Table, Props}, C) ->
+    {WhereSQL, Bindings} = props_to_WHERE_statements(Props),
+    select_record({Table, WhereSQL, Bindings}, C).
+
+%% Select full records -----------------------------------------------
+
+%% No Where clause, full table select !
+select_record({Table, []=_WhereSQL, Bindings}, C) ->
+    %% Query is empty so Bindings should also do
+    [] = Bindings,
+    Q = ["SELECT * FROM ", Table],
+    select_row({Q, []}, C);
+
+select_record({Table, WhereSQL, Bindings}, C) ->
+    Q = ["SELECT * FROM ", Table, " WHERE ", WhereSQL],
+    select_row({Q, Bindings}, C).
+
+select_row({Query, Bindings}, C) ->
+    Reply = case q(C, Query, Bindings)
         of {ok, ColumnsInfo, Rows} ->
             %% On a récupéré des rows, on doit renvoyer une proplist
             %%                   [{colname, Value}]
             {ok, length(Rows), read_rows(ColumnsInfo, Rows)}
-         ; {error, #error{code = <<"42P01">>}} ->
-            {error, {no_table, Table}}
+         ; {error, #error{code = <<"42P01">>, message=ErrMsg}} ->
+            {error, {no_table, ErrMsg}}
          ; Any -> Any
     end,
     {reply, Reply, C}.
+
+% select_record(#rsq{table=Table, selectsql=SELECT}=RSQ, C) ->
+%     {WhereSQL, Bindings} = build_where_clause(RSQ),
+%     Q = case SELECT
+%         of undefined -> ["SELECT * FROM ", Table, WhereSQL, ";"]
+%          ; _  -> [SELECT, "  ", WhereSQL, ";"]
+%     end,
+%     Reply = case q(C,Q, Bindings)
+%         of {ok, ColumnsInfo, Rows} ->
+%             %% On a récupéré des rows, on doit renvoyer une proplist
+%             %%                   [{colname, Value}]
+%             {ok, length(Rows), read_rows(ColumnsInfo, Rows)}
+%          ; {error, #error{code = <<"42P01">>}} ->
+%             {error, {no_table, Table}}
+%          ; Any -> Any
+%     end,
+%     {reply, Reply, C}.
 
 %%%===================================================================
 %%% Internal functions
@@ -233,27 +267,39 @@ tty_db_if_error(_,_) -> ok.
 
 %% SELECT FROM WHERE -------------------------------------------------
 
-build_where_clause(#rsq{wheresql=WhereSQL,bindings=Bindings,props=Props}) ->
-    %% On calcule à partir de quel chiffre les bindings des props vont
-    %% commencer : si on a 2 bindings, les bindings des props doivent
-    %% commencer à $3
-    PropsMarkStart = length(Bindings) + 1,
-    WhereKey = case WhereSQL
-        of "" -> " WHERE True "
-         ; _  -> " WHERE "
-    end,
-    {PropsWhereSQL, PropsBindings} = props_to_WHERE_statements(Props, PropsMarkStart),
-    FinalSQL = [WhereKey," ",WhereSQL," ",PropsWhereSQL],
-    FinalBindings = Bindings ++ PropsBindings,
-    {FinalSQL, FinalBindings}.
+% build_where_clause(#rsq{wheresql=WhereSQL,bindings=Bindings,props=Props}) ->
+%     %% On calcule à partir de quel chiffre les bindings des props vont
+%     %% commencer : si on a 2 bindings, les bindings des props doivent
+%     %% commencer à $3
+%     PropsMarkStart = length(Bindings) + 1,
+%     WhereKey = case WhereSQL
+%         of "" -> " WHERE True "
+%          ; _  -> " WHERE "
+%     end,
+%     {PropsWhereSQL, PropsBindings} = props_to_WHERE_statements(Props, PropsMarkStart),
+%     FinalSQL = [WhereKey," ",WhereSQL," ",PropsWhereSQL],
+%     FinalBindings = Bindings ++ PropsBindings,
+%     {FinalSQL, FinalBindings}.
+
+props_to_WHERE_statements(Props) ->
+   %% start $x bindings from 1
+   props_to_WHERE_statements(Props, 1).
 
 props_to_WHERE_statements([], _PMS) ->
-    {"", []};
+    {[], []};
 props_to_WHERE_statements(Props, PropsMarkStart) ->
     props_to_WHERE_statements(Props, [], [], PropsMarkStart).
 
 props_to_WHERE_statements([], SqlAcc, Bindings, _) ->
+    %% Au cas ou on attaque directement props_to_WHERE_statements/4
     {SqlAcc, Bindings};
+
+props_to_WHERE_statements([{Key,Val}], SqlAcc, Bindings, IMark) ->
+    %% Pour le dernier, qui sera placé en début de requête, pas
+    %% d'opérateur AND
+    SqlPart = [" ", Key, " = $", integer_to_list(IMark), " "],
+    %% On renvoie le résultat puisque c'est le dernier
+    {[SqlPart|SqlAcc], [Val|Bindings]};
 
 props_to_WHERE_statements([{Key,Val}|Props], SqlAcc, Bindings, IMark) ->
     SqlPart = [" AND ", Key, " = $", integer_to_list(IMark), " "],
@@ -273,7 +319,8 @@ read_rows(ColumnsInfo, Rows) ->
 
 read_rows(_ColumnsInfo, [], Props) ->
     %% no more rows, return
-    Props;
+    %% On reverse pour respecter le ORDER BY
+    lists:reverse(Props);
 
 read_rows(Names, [Row|Rows], Props) ->
     RowProps = lists:zip(Names, tuple_to_list(Row)),

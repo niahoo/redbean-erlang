@@ -37,20 +37,40 @@ handle({store, Bean}, _From, State) ->
     {reply, {ok, PostUpdateBean:untaint()}, State};
 
 
-
-handle({select_record, RecordQuery}, _From, State) ->
+handle({select_record, Table, WhereCLause, Bindings}, _From, State) ->
     DBA = State#ebdb.dba,
-    Rs = eb_adapter:select_record(DBA, RecordQuery),
-    %% ici en mode fluide, on va masquer l'erreur de table inexistante
-    %% en renvoyant simplement un recordcount 0
+    Rs = eb_adapter:select_record(DBA, Table, WhereCLause, Bindings),
     Reply = case Rs
         of {error, {no_table, _Table}} -> {ok, 0, []}
          ; Any -> Any
     end,
     {reply, Reply, State};
 
+handle({select_match, Table, Props}, _From, State) ->
+    DBA = State#ebdb.dba,
+    Rs = eb_adapter:select_match(DBA, Table, Props),
+    Reply = case Rs
+        of {error, {no_table, _Table}} -> {ok, 0, []}
+         ; Any -> Any
+    end,
+    {reply, Reply, State};
+
+handle({select_row, Query, Bindings}, _From, State) ->
+    DBA = State#ebdb.dba,
+    Rs = eb_adapter:select_row(DBA, Query, Bindings),
+    Reply = case Rs
+        of {error, {no_table, _Table}} -> {ok, 0, []}
+         ; Any -> Any
+    end,
+    {reply, Reply, State};
+
+% handle({select_record, RecordQuery}, _From, State) ->
+%     %% ici en mode fluide, on va masquer l'erreur de table inexistante
+%     %% en renvoyant simplement un recordcount 0
+
+
 handle(_Request, _From, State) ->
-    Reply = {?MODULE, unknown_request},
+    Reply = {error, {?MODULE, unknown_request, _Request}},
     {reply, Reply, State}.
 
 

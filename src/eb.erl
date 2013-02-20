@@ -12,7 +12,7 @@
 -export([load/2,find/1,find/2,find/3]).
 -export([store/1]).
 -export([exec/1,exec/2]).
--export([get_col/1,get_col/2]).
+-export([get_col/1,get_col/2,get_rows/1,get_rows/2]).
 -export([get_eb_db/0]).
 
 %% TEST --------------------------------------------------------------
@@ -60,6 +60,11 @@ get_col(Query) -> get_col(Query,[]).
 get_col(Query, Bindings) ->
     eb_db:get_col(Query, Bindings).
 
+get_rows(Query) -> get_rows(Query, []).
+
+get_rows(Query, Bindings) ->
+    eb_db:get_rows(Query, Bindings).
+
 
 %% Beans -------------------------------------------------------------
 
@@ -70,7 +75,7 @@ store(Wrapper) -> eb_db:store(Wrapper).
 
 load(Type, ID) -> eb_db:load(Type, ID).
 
-find(Type) -> find(Type, "", []).
+find(Type) -> find(Type, [], []).
 find(Type, AddSQL) -> find(Type, AddSQL, []).
 find(Type, AddSQL, Bindings) -> eb_db:find(Type, AddSQL, Bindings).
 

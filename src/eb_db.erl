@@ -16,7 +16,7 @@
 -export([get_adapter/1]).
 -export([store/1]).
 -export([load/2,find/3]).
--export([get_col/2]).
+-export([get_col/2,get_rows/2]).
 
 
 %% gen_server callbacks
@@ -63,7 +63,7 @@ get_col(Query, Bindings) ->
     RecordSet = simple_select(Query, Bindings),
     case RecordSet
         of {ok, _X, Rows} ->
-            Column = [V || [{K,V}|Row] <- Rows ],
+            Column = [V || [{_K,V}|_RowCols] <- Rows],
             {ok, Column}
          ; Any -> Any
     end.
@@ -82,8 +82,7 @@ simple_select(Query, Bindings) ->
     %% On regle le selectsql sur une liste vide pour qu'il ne soit pas
     %% remplacé par le select par défaut. Vu que Query contient
     %% logiquement une instruction select
-    RecordQuery = #rsq{selectsql=[], wheresql=Query, bindings=Bindings},
-    _RecordSet = gen_server:call(?DB, {select_record, RecordQuery}).
+    _RecordSet = gen_server:call(?DB, {select_row, Query, Bindings}).
 
 %% Working with beans ------------------------------------------------
 
@@ -102,8 +101,9 @@ store_bean(Bean) ->
 %% bean de l'adapter. L'adpter pourrait en renvoyer plusieurs si
 %% l'utilisateur fait n'importe quoi avec sa base de données
 load(Type, ID) ->
-    RecordQuery = #rsq{table=eb_utils:to_binary(Type), props=[{<<"id">>, ID}]},
-    RecordSet = gen_server:call(?DB, {select_record, RecordQuery}),
+    Props=[{<<"id">>, ID}],
+    Table = eb_utils:to_binary(Type),
+    RecordSet = gen_server:call(?DB, {select_match, Table, Props}),
     Bean = eb_bean:new(Type),
     case RecordSet
         of {ok, 1, [Row]} ->
@@ -122,9 +122,9 @@ load(Type, ID) ->
 %% Ici on recherche des beans. Comme l'utilisateur peut insérer du SQL
 %% qui vient après une where clause, i.e ORDER BY, LIMIT, GROUP BY, on
 %% passe obligatoirement une props vide dans la #rsq
-find(Type, AddSQL, Bindings) ->
-    RecordQuery = #rsq{table=eb_utils:to_binary(Type), props=[], wheresql=AddSQL, bindings=Bindings},
-    RecordSet = gen_server:call(?DB, {select_record, RecordQuery}),
+find(Type, WhereSQL, Bindings) ->
+    Table = eb_utils:to_binary(Type),
+    RecordSet = gen_server:call(?DB, {select_record, Table, WhereSQL, Bindings}),
     case RecordSet
         of {ok, _Count, Rows} ->
             Beans = convert_to_beans(Type, Rows),

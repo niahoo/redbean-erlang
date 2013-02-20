@@ -13,7 +13,7 @@
 -export([table_exists/2,create_table/2,get_tables/1]).
 -export([quote/2,check/2,scan_type/2]).
 -export([update_record/4]).
--export([select_record/2]).
+-export([select_match/3,select_record/4,select_row/3]).
 -export([column_exists/3,add_column/4,get_columns/2,widen_column/4,get_type/3,accept_type/3]).
 
 %% gen_server callbacks
@@ -32,9 +32,6 @@
 -callback init(Conf :: term()) -> {ok, State :: term()} | {error, Reason :: term()}.
 
 -callback close(Sate :: term()) -> ok.
-
--callback exec(Query :: term() | {Query :: term(), Bindings :: term()}, State :: term()) ->
-    dbareply(Result :: term()).
 
 -callback quote(Name :: term(), State :: term()) ->
     dbareply(Quoted :: term()).
@@ -66,9 +63,17 @@
 -callback update_record({Table :: binary(), KeyVals :: dbarow(), ID :: term()}, State :: term()) ->
     dbareply({ok, NewID :: term()}).
 
--callback select_record(RecordSetQuery :: rsq(), State :: term()) ->
+-callback select_record({Table :: binary(), WhereClause :: term(), [Binding :: term()]}, State :: term()) ->
     dbareply({ok, RecordCount :: pos_integer(), Rows :: [dbarow()]}).
 
+-callback select_match({Table :: binary(), [{Key :: binary(), Value :: term()}]}, State :: term()) ->
+    dbareply({ok, RecordCount :: pos_integer(), Rows :: [dbarow()]}).
+
+-callback select_row({Query :: term(), [Binding :: term()]}, State :: term()) ->
+    dbareply({ok, RecordCount :: pos_integer(), Rows :: [dbarow()]}).
+
+-callback exec(Query :: term() | {Query :: term(), [Binding :: term()]}, State :: term()) ->
+    dbareply(Result :: term()).
 %%%===================================================================
 %%% TEST API
 %%%===================================================================
@@ -174,15 +179,24 @@ exec(Pid, Query) ->
 exec(Pid, Query, Bindings) ->
     gen_server:call(Pid, {exec, {Query, Bindings}}).
 
+%% l'adapter spécifique peut renvoyer une erreur genre no_table ici on
+%% check le nom juste pour s'assurer qu'on envoie un nom valide et que
+%% l'erreur ne vient pas du code
+
 update_record(Pid, Table, KeyVals, ID) ->
+    true = check(Pid, {table, Table}),
     gen_server:call(Pid, {update_record, {Table, KeyVals, ID}}).
 
-select_record(Pid, #rsq{table=Table}=RecordQuery) ->
-    %% l'adapter spécifique peut renvoyer une erreur genre no_table
-    %% ici on check le nom juste pour s'assurer qu'on envoie un nom
-    %% valide et que l'erreur ne vient pas du code
+select_match(Pid, Table, Props) ->
     true = check(Pid, {table, Table}),
-    gen_server:call(Pid, {select_record, RecordQuery}).
+    gen_server:call(Pid, {select_match, {Table, Props}}).
+
+select_record(Pid, Table, WhereClause, Bindings) ->
+    true = check(Pid, {table, Table}),
+    gen_server:call(Pid, {select_record, {Table, WhereClause, Bindings}}).
+
+select_row(Pid, Query, Bindings) ->
+    gen_server:call(Pid, {select_row, {Query, Bindings}}).
 
 %% stop --------------------------------------------------------------
 
