@@ -38,10 +38,10 @@
 %% l'enregistre dans gproc
 get_eb_db() ->
     try
-        gproc:get_value({n,l,eb_db})
+        gproc:get_value({p,l,eb_db})
     catch
         error:badarg ->
-            gproc:reg({n,l,eb_db}, default_eb_db),
+            gproc:reg({p,l,eb_db}, default_eb_db),
             get_eb_db()
     end.
 
