@@ -28,6 +28,13 @@ tests:
 xref:
 	@(rebar skip_deps=true xref)
 
+dial:
+	dialyzer \
+		--src -r src \
+		-pa $(HOME)/src/erlbean \
+		-pa $(HOME)/src/erlbean/deps/epgsql \
+		--verbose
+
 vm-args:
 
 	cat priv/vm-args.src > priv/vm-args
@@ -35,13 +42,6 @@ vm-args:
 	for i in `find -name ebin -type d`; do \
 		echo '-pa' $$i >> priv/vm-args; \
 	done
-
-dial:
-	dialyzer \
-		--src -r src \
-		-pa $(HOME)/src/erlbean \
-		-pa $(HOME)/src/erlbean/deps/epgsql \
-		--verbose
 
 doc:
 	@(rebar skip_deps=true doc)

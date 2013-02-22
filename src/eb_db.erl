@@ -88,7 +88,7 @@ simple_select(Query, Bindings) ->
 
 store(Bean) ->
     case Bean:tainted()
-        of false -> Bean
+        of false -> {ok, Bean}
          ; true  -> {ok, _NewBean} = store_bean(Bean)
     end.
 
@@ -107,13 +107,13 @@ load(Type, ID) ->
     Bean = eb_bean:new(Type),
     case RecordSet
         of {ok, 1, [Row]} ->
-                {ok, Bean2} = Bean:set(Row),
+                Bean2 = Bean:set(Row),
                 {ok, Bean2:untaint()}
          ; {ok, 0, []}  ->
                 {not_found, Bean}
          ; {ok, _X, Rows} when is_list(Rows) ->
                 FirstRow = hd(Rows),
-                {ok, Bean2} = Bean:set(FirstRow),
+                Bean2 = Bean:set(FirstRow),
                 {ok, Bean2:untaint()}
          ; Any ->
                 Any

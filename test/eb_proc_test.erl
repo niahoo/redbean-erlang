@@ -32,14 +32,14 @@ interface_test_() ->
        ,{"Test of setting values",
             setup, local, fun startapp/0, fun stopapp/1,
             fun(started) ->
-                {ok, MyBean} = eb:proc([
+                MyBean = eb:proc([
                         {dispense, mytype},
                         {set, name, "robert"},
                         {set, [{age, 23}, {eyes, "blue"}]}
                     ]),
-                [?_assertMatch({ok, "robert"}, MyBean:get(name))
-                ,?_assertMatch({ok, 23}, MyBean:get(age))
-                ,?_assertMatch({ok, "blue"}, MyBean:get(eyes))
+                [?_assertMatch("robert", MyBean:get(name))
+                ,?_assertMatch(23, MyBean:get(age))
+                ,?_assertMatch("blue", MyBean:get(eyes))
                 ]
             end
         }
@@ -47,21 +47,20 @@ interface_test_() ->
             setup, local, fun startapp/0, fun stopapp/1,
             fun(started) ->
                 MyBean = eb:dispense(mytype),
-                {ok, MyBean1} = MyBean:set([{name, "johnny"}, {age, 99}]),
+                MyBean1 = MyBean:set([{name, "johnny"}, {age, 99}]),
                 {ok, MyBean2} = eb:store(MyBean1),
                 ID = MyBean2:id(),
                 {ok, MaybeBean} = eb:proc([{load, mytype, ID}]),
                 [?_assert(eb_bean:is_bean(MaybeBean))
                 ,?_assertEqual(100, eb:proc([
                         {load, mytype, ID},
-                        fun({ok, Bean}) -> {ok, Age} = Bean:get(age), Age + 1 end
+                        fun({ok, Bean}) -> Age = Bean:get(age), Age + 1 end
                     ]))
                 ,?_assertMatch(99, eb:proc([
                         {load, mytype, ID},
                         {get, name},
-                        fun({ok, <<"johnny">>}, [{ok, Bean}|_]) ->
-                            {ok, Age} = Bean:get(age),
-                            Age
+                        fun(<<"johnny">>, [{ok, Bean}|_]) ->
+                            Bean:get(age)
                         end
                     ]))
                 ]
@@ -78,7 +77,7 @@ interface_test_() ->
                         {load, mytype, '_'}
                     ]),
                 [?_assert(eb_bean:is_bean(Bean))
-                ,?_assertMatch({ok, <<"blond">>}, Bean:get(hair))
+                ,?_assertMatch(<<"blond">>, Bean:get(hair))
                 ]
             end
         }

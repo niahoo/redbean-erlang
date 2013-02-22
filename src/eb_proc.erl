@@ -57,12 +57,12 @@ eval({dispense, Type}, _Stack) ->
 
 eval({set, Key, Value}, [ABean|_Stack]) ->
     Bean = unok(ABean),
-    {ok, Bean2} = eb_bean:set(Key, Value, Bean),
-    {ok, Bean2};
+    Bean2 = eb_bean:set(Key, Value, Bean),
+    Bean2;
 
 eval({set, KeyValues}, [ABean|_Stack]) when is_list(KeyValues) ->
     Bean = unok(ABean),
-    {ok, _Bean2} = eb_bean:set(KeyValues, Bean);
+    _Bean2 = eb_bean:set(KeyValues, Bean);
 
 eval({load, Type, ID}, _Stack) ->
     eb_db:load(Type, ID);

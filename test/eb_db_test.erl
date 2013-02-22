@@ -36,7 +36,7 @@ internals_test_() ->
                 fun (started) ->
                     Bean = eb:dispense(bean),
                     Bean2 = Bean:untaint(),
-                    Bean3 = eb:store(Bean2),
+                    {ok, Bean3} = eb:store(Bean2),
                     {inorder, [
                         ?_assertMatch(Bean2, Bean3)
                     ]}
@@ -85,8 +85,8 @@ internals_test_() ->
                     Bean = eb:dispense(bean),
                     {ok, Bean2} = eb_db:store(Bean),
                     {inorder, [
-                        ?_assertMatch({ok, undefined}, Bean:get(id)),
-                        ?_assertMatch({ok, ID} when is_integer(ID), Bean2:get(id)),
+                        ?_assertMatch(undefined, Bean:get(id)),
+                        ?_assertMatch(ID when is_integer(ID), Bean2:get(id)),
                         ?_assertMatch({ok, [], []},eb_adapter:exec(dba(),"drop table bean"))
                     ]}
                 end
@@ -98,7 +98,7 @@ internals_test_() ->
                 fun startapp/0,
                 fun stopapp/1,
                 fun (started) ->
-                    {ok, Bean} = (eb:dispense(mytype)):set([{col_1, 123}, {col_2, "val II"}]),
+                    Bean = (eb:dispense(mytype)):set([{col_1, 123}, {col_2, "val II"}]),
                     {ok, _Bean2} = eb:store(Bean),
                     {ok,Cols} = eb_adapter:get_columns(dba(),mytype),
                     {inorder, [
@@ -114,7 +114,7 @@ internals_test_() ->
                 fun startapp/0,
                 fun stopapp/1,
                 fun (started) ->
-                    {ok, Bean} = (eb:dispense(mytype)):set(
+                    Bean = (eb:dispense(mytype)):set(
                         [{col_1, "this is text"}, %% text in an integer column
                          {col_2, 321}             %% integer in a text column
                     ]),
@@ -134,7 +134,7 @@ internals_test_() ->
                 fun startapp/0,
                 fun stopapp/1,
                 fun (started) ->
-                    {ok, Bean} = (eb:dispense(mytype)):set(
+                    Bean = (eb:dispense(mytype)):set(
                         [{name, "Ruben Calderon"},
                          {age, 45}
                     ]),
@@ -142,8 +142,8 @@ internals_test_() ->
                     ID = Bean2:id(),
                     {ok, BeanL} = eb:load(mytype,ID),
                     {inorder, [
-                        ?_assertMatch({ok, 45}, BeanL:get(age)),
-                        ?_assertMatch({ok, <<"Ruben Calderon">>}, BeanL:get(name)),
+                        ?_assertMatch(45, BeanL:get(age)),
+                        ?_assertMatch(<<"Ruben Calderon">>, BeanL:get(name)),
                         %% load a non-existing ID
                         ?_assertMatch({not_found, {eb_bean, SomeBean}}, eb:load(mytype,-1)),
                         ?_assertEqual(false, BeanL:tainted())
@@ -165,8 +165,8 @@ internals_test_() ->
                     {ok, [B2]} = eb:find(book, "title = $1", ["The Shield"]),
                     {inorder,
                         [ ?_assertEqual(2, length(Bs))
-                        , ?_assertMatch({ok, 10}, B1:get(price))
-                        , ?_assertMatch({ok, 25}, B2:get(price))
+                        , ?_assertMatch(10, B1:get(price))
+                        , ?_assertMatch(25, B2:get(price))
                         , ?_assertMatch(false, B1:tainted())
                         ]}
                 end
@@ -181,8 +181,8 @@ internals_test_() ->
                 fun stopapp/1,
                 fun (started) ->
                     Book = eb:dispense(book),
-                    {ok, ChapOne} = eb:proc([{dispense, chapter},{set, title, "Chapter One"}]),
-                    {ok, Book2} = Book:own(ChapOne),
+                    ChapOne = eb:proc([{dispense, chapter},{set, title, "Chapter One"}]),
+                    Book2 = Book:own(ChapOne),
                     {inorder,
                         [
                           % ?_assertEqual(false, eb_adapter:table_exists(dba(), book))

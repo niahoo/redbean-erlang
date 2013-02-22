@@ -33,7 +33,7 @@ handle({store, Bean}, _From, State) ->
 
     %%
 
-    {ok, PostUpdateBean} = Bean:set(id,ID),
+    PostUpdateBean = Bean:set(id,ID),
     {reply, {ok, PostUpdateBean:untaint()}, State};
 
 

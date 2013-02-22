@@ -49,20 +49,20 @@ is_bean(_) -> false.
 
 get(Key, {eb_bean,Bean}) when is_atom(Key) ->
     case ?DICT:find(Key, Bean#bean.props)
-        of {ok,Value} -> {ok,Value}
+        of {ok,Value} -> Value
          ; error -> undefined
     end.
 
 set([], Wrapper) ->
-    {ok, Wrapper};
+    Wrapper;
 
 set([{Key,Value}|Props], Wrapper) ->
-    {ok, NewWrapper} = set(Key, Value, Wrapper),
+    NewWrapper = set(Key, Value, Wrapper),
     set(Props, NewWrapper).
 
 set(Key, Value, ?WRAPPER) when is_atom(Key) ->
    NewProps = ?DICT:store(Key, Value, Bean#bean.props),
-   {ok, wrap(Bean#bean{props=NewProps, tainted=true})}.
+   wrap(Bean#bean{props=NewProps, tainted=true}).
 
 export(?WRAPPER) ->
     ?DICT:to_list(Bean#bean.props).
@@ -95,30 +95,30 @@ fold(Fun, Acc, ?WRAPPER) ->
 
 get_meta(Key, {eb_bean,Bean}) ->
     case ?METADICT:find(Key, Bean#bean.meta)
-        of {ok,Value} -> {ok,Value}
+        of {ok,Value} -> Value
          ; error -> undefined
     end.
 
 set_meta([], Wrapper) ->
-    {ok, Wrapper};
+    Wrapper;
 
 set_meta([{Key,Value}|Props], Wrapper) ->
-    {ok, NewWrapper} = set_meta(Key, Value, Wrapper),
+    NewWrapper = set_meta(Key, Value, Wrapper),
     set_meta(Props, NewWrapper).
 
 set_meta(Key, Value, ?WRAPPER) ->
    NewMeta = ?METADICT:store(Key, Value, Bean#bean.meta),
-   {ok, wrap(Bean#bean{meta=NewMeta})}.
+   wrap(Bean#bean{meta=NewMeta}).
 
 append_meta(Key, Value, ?WRAPPER) ->
    NewMeta = ?METADICT:append(Key, Value, Bean#bean.meta),
-   {ok, wrap(Bean#bean{meta=NewMeta})}.
+   wrap(Bean#bean{meta=NewMeta}).
 
 %% Relations ---------------------------------------------------------
 
 own({eb_bean, Owned}=SubWrapper, Wrapper) when is_record(Owned, bean) ->
-    {ok, Wrapper2} = append_meta(own, SubWrapper, Wrapper),
-    {ok, Wrapper2}.
+    Wrapper2 = append_meta(own, SubWrapper, Wrapper),
+    Wrapper2.
 
 
 %%%===================================================================
