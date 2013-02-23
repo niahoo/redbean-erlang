@@ -19,3 +19,8 @@ un bean afin de préciser le type de données qu'il faut sauvergarder en
 base de données. ça permet au fluid mode de créer les colonnes avec ce
 type plutot que d'appeler scan_type et donc de stocker des chaines
 binaires dans des champs text
+
+
+-attention, il semble que l'adapter epgsql fasse trop de requête pour
+-savoir les tables qui existent alors qu'il n'est censé demander que
+-le nom des colonnes
